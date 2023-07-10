@@ -8,8 +8,6 @@
 # Usage: python3 plotter <port>
 # eg. python3 plotter /dev/ttyACM0
 
-# see matplotlib animation API for more: https://matplotlib.org/stable/api/animation_api.html
-
 import serial
 import sys
 import matplotlib.pyplot as plt
@@ -24,11 +22,11 @@ class Plotter:
         self.ax = ax
         self.maxt = 250
         self.tdata = [0]
-        self.ydata = [3.3/2]
+        self.ydata = [10]
         self.line = Line2D(self.tdata, self.ydata)
 
         self.ax.add_line(self.line)
-        self.ax.set_ylim(0, 4)
+        self.ax.set_ylim(-4, 4)
         self.ax.set_xlim(0, self.maxt)
 
     def update(self, y):
