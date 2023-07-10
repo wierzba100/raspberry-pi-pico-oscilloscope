@@ -13,8 +13,8 @@ int main() {
     stdio_init_all();
 
     adc_init();
-    adc_gpio_init( ADC_PIN);
-    adc_select_input( ADC_NUM);
+    adc_gpio_init(ADC_PIN);
+    adc_select_input(ADC_NUM);
 
     uint adc_raw;
     while (1) {
