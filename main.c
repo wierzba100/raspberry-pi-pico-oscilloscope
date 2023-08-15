@@ -7,7 +7,6 @@
 #define ADC_VREF 3.3
 #define ADC_RANGE (1 << 12)
 #define ADC_CONVERT (ADC_VREF / (ADC_RANGE - 1))
-#define OFFSET 1.65
 
 int main() {
     stdio_init_all();
@@ -19,7 +18,7 @@ int main() {
     uint adc_raw;
     while (1) {
         adc_raw = adc_read(); // raw voltage from ADC
-        printf("%.2f\n", ((adc_raw * ADC_CONVERT) - OFFSET));
+        printf("%.2f\n", (adc_raw * ADC_CONVERT));
         sleep_ms(10);
     }
 
