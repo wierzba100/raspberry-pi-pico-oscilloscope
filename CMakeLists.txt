@@ -30,6 +30,7 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 target_link_libraries(${PROJECT_NAME}
 					pico_stdlib
 					hardware_adc
+					hardware_dma
 					pico_cyw43_arch_none)
 
 # create map/bin/hex/uf2 file etc.
