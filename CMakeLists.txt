@@ -31,6 +31,7 @@ target_link_libraries(${PROJECT_NAME}
 					pico_stdlib
 					hardware_adc
 					hardware_dma
+					hardware_irq
 					pico_cyw43_arch_none)
 
 # create map/bin/hex/uf2 file etc.

@@ -3,9 +3,10 @@
 
 #include "hardware/adc.h"
 #include "hardware/dma.h"
+#include "hardware/irq.h"
 
-#define ADC0_CAPTURE_CHANNEL 0
-#define ADC1_CAPTURE_CHANNEL 1
+#define ADC0_CAPTURE_CHANNEL 26
+#define ADC1_CAPTURE_CHANNEL 37
 
 #define ADC_VREF 3.3
 #define ADC_RANGE (1 << 8)
@@ -13,100 +14,82 @@
 
 #define CAPTURE_DEPTH 10
 
-uint8_t capture_buf_0[CAPTURE_DEPTH];
-uint8_t capture_buf_1[CAPTURE_DEPTH];
+uint8_t capture_buf[CAPTURE_DEPTH];
+uint8_t * sample_address_pointer = &capture_buf[0];
 
 int main() {
     stdio_init_all();
 
-    adc_gpio_init(26 + ADC0_CAPTURE_CHANNEL);
-    adc_gpio_init(26 + ADC1_CAPTURE_CHANNEL);
+    adc_gpio_init(ADC0_CAPTURE_CHANNEL);
+    adc_gpio_init(ADC1_CAPTURE_CHANNEL);
 
     adc_init();
 
+    adc_set_clkdiv(0); // Run at max speed.
+
+    adc_set_round_robin(00011); // Enable round-robin sampling of all 5 inputs.
+    adc_select_input(0); // Set starting ADC channel for round-robin mode.
     adc_fifo_setup(
             true,    // Write each completed conversion to the sample FIFO
             true,    // Enable DMA data request (DREQ)
-            1,       // DREQ (and IRQ) asserted when at least 1 sample present
-            false,   // We won't see the ERR bit because of 8 bit reads; disable.
-            true     // Shift each sample to 8 bits when pushing to FIFO
+            1,       // Assert DREQ (and IRQ) at least 1 sample present
+            false,   // Omit ERR bit (bit 15) since we have 8 bit reads.
+            true     // shift each sample to 8 bits when pushing to FIFO
     );
 
-    adc_set_clkdiv(0); //max speed
+    //Channel 1
+    uint samp_chan = dma_claim_unused_channel(true);
+    dma_channel_config samp_conf = dma_channel_get_default_config(samp_chan);
 
-    sleep_ms(1000);
-    // Set up the DMA to start transferring data as soon as it appears in FIFO
+    channel_config_set_transfer_data_size(&samp_conf, DMA_SIZE_8);
+    channel_config_set_read_increment(&samp_conf, false); // read from adc FIFO reg.
+    channel_config_set_write_increment(&samp_conf, true);
+    channel_config_set_dreq(&samp_conf, DREQ_ADC); // pace data according to ADC
 
-    //channel 0 dma
-    uint dma_chan_0 = dma_claim_unused_channel(true);
-    dma_channel_config cfg_0 = dma_channel_get_default_config(dma_chan_0);
+    dma_channel_configure(samp_chan, &samp_conf,
+                          capture_buf,    // dst
+                          &adc_hw->fifo,  // src
+                          CAPTURE_DEPTH,  // transfer count
+                          false            // start immediately
+    );
 
-    //channel 1 dma
-    uint dma_chan_1 = dma_claim_unused_channel(true);
-    dma_channel_config cfg_1 = dma_channel_get_default_config(dma_chan_1);
+    //Channel 2
+    uint control_chan = dma_claim_unused_channel(true);
+    dma_channel_config control_conf = dma_channel_get_default_config(control_chan);
+
+    channel_config_set_transfer_data_size(&control_conf, DMA_SIZE_32);
+    channel_config_set_read_increment(&control_conf, false); // read from adc FIFO reg.
+    channel_config_set_write_increment(&control_conf, false);
+    channel_config_set_chain_to(&control_conf, samp_chan); // pace data according to ADC
+
+    dma_channel_configure(
+            control_chan,                         // Channel to be configured
+            &control_conf,                                  // The configuration we just created
+            &dma_hw->ch[samp_chan].write_addr,  // Write address (channel 0 read address)
+            &sample_address_pointer,              // Read address (POINTER TO AN ADDRESS)
+            1,                                    // Number of transfers, in this case each is 4 byte
+            false                                 // Don't start immediately.
+    );
+
+    dma_start_channel_mask((1u << samp_chan));
+    adc_run(true) ;
+
 
     while(1)
     {
-        adc_select_input(ADC0_CAPTURE_CHANNEL);
-
-        // Reading from constant address, writing to incrementing byte addresses
-        channel_config_set_transfer_data_size(&cfg_0, DMA_SIZE_8);
-        channel_config_set_read_increment(&cfg_0, false);
-        channel_config_set_write_increment(&cfg_0, true);
-
-        // Pace transfers based on availability of ADC samples
-        channel_config_set_dreq(&cfg_0, DREQ_ADC);
-
-        dma_channel_configure(dma_chan_0, &cfg_0,
-                              capture_buf_0,    // dst
-                              &adc_hw->fifo,  // src
-                              CAPTURE_DEPTH,  // transfer count
-                              true            // start immediately
-        );
-
-        adc_run(true);
-
-        // Once DMA finishes, stop any new conversions from starting, and clean up
-        // the FIFO in case the ADC was still mid-conversion.
-        dma_channel_wait_for_finish_blocking(dma_chan_0);
-        printf("Capture 0 finished\n");
+        dma_channel_wait_for_finish_blocking(samp_chan);
         adc_run(false);
         adc_fifo_drain();
-
-        adc_select_input(ADC1_CAPTURE_CHANNEL);
-
-        // Reading from constant address, writing to incrementing byte addresses
-        channel_config_set_transfer_data_size(&cfg_1, DMA_SIZE_8);
-        channel_config_set_read_increment(&cfg_1, false);
-        channel_config_set_write_increment(&cfg_1, true);
-
-        // Pace transfers based on availability of ADC samples
-        channel_config_set_dreq(&cfg_1, DREQ_ADC);
-
-        dma_channel_configure(dma_chan_1, &cfg_1,
-                              capture_buf_1,    // dst
-                              &adc_hw->fifo,  // src
-                              CAPTURE_DEPTH,  // transfer count
-                              true            // start immediately
-        );
-
-        adc_run(true);
-
-        // Once DMA finishes, stop any new conversions from starting, and clean up
-        // the FIFO in case the ADC was still mid-conversion.
-        dma_channel_wait_for_finish_blocking(dma_chan_1);
-        printf("Capture 1 finished\n");
-        adc_run(false);
-        adc_fifo_drain();
-
 
         // Print samples to stdout so you can display them in pyplot, excel, matlab
         for (int i = 0; i < CAPTURE_DEPTH; ++i) {
-            printf("1:%.2f, 2:%.2f, ", (capture_buf_0[i] * ADC_CONVERT), (capture_buf_1[i] * ADC_CONVERT));
-            if (i % 6 == 5)
+            printf("%.2f, ;", (capture_buf[i] * ADC_CONVERT));
+            if (i % 10 == 9)
                 printf("\n");
         }
-        sleep_ms(100);
+        dma_channel_start(control_chan);
+        adc_run(true);
+        sleep_ms(1000);
     }
 
     return 0;
