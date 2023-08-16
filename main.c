@@ -6,7 +6,7 @@
 #include "hardware/irq.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
-#define ADC1_CAPTURE_CHANNEL 37
+#define ADC1_CAPTURE_CHANNEL 27
 
 #define ADC_VREF 3.3
 #define ADC_RANGE (1 << 8)
@@ -25,10 +25,11 @@ int main() {
 
     adc_init();
 
+    adc_set_round_robin(00001); // Enable round-robin sampling of all 5 inputs.
+    adc_select_input(0); // Set starting ADC channel for round-robin mode.
+
     adc_set_clkdiv(0); // Run at max speed.
 
-    adc_set_round_robin(00011); // Enable round-robin sampling of all 5 inputs.
-    adc_select_input(0); // Set starting ADC channel for round-robin mode.
     adc_fifo_setup(
             true,    // Write each completed conversion to the sample FIFO
             true,    // Enable DMA data request (DREQ)
