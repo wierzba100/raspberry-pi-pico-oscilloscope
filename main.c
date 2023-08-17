@@ -18,6 +18,22 @@
 uint8_t capture_buf[CAPTURE_DEPTH];
 uint8_t * sample_address_pointer = &capture_buf[0];
 
+uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
+{
+    uint32_t clock = 125000000;
+    uint32_t divider16 = clock / freq / 4096 + (clock % (freq * 4096) != 0);
+    if (divider16 / 16 == 0)
+    {
+        divider16 = 16;
+    }
+    uint32_t wrap = clock * 16 / divider16 / freq - 1;
+    pwm_set_clkdiv_int_frac(slice_num, divider16/16,divider16 & 0xF);
+    pwm_set_wrap(slice_num, wrap);
+    pwm_set_chan_level(slice_num, chan, wrap * duty / 100);
+
+    return wrap;
+}
+
 int main() {
     stdio_init_all();
 
@@ -25,9 +41,9 @@ int main() {
     gpio_set_function(16, GPIO_FUNC_PWM);
     uint slice_num = pwm_gpio_to_slice_num(16);
     pwm_set_enabled(slice_num, true);
-    //wypelnienie
-    pwm_set_wrap(slice_num, 200);
-    pwm_set_chan_level(slice_num, PWM_CHAN_A, 100);
+
+    //wypelnienie 50%, 50Hz
+    pwm_set_freq_duty(slice_num, PWM_CHAN_A, 50, 50);
     pwm_set_enabled(slice_num, true);
 
     adc_gpio_init(ADC0_CAPTURE_CHANNEL);
@@ -48,7 +64,7 @@ int main() {
             true     // shift each sample to 8 bits when pushing to FIFO
     );
 
-    //Channel 1
+    //Channel 1 DMA
     uint samp_chan = dma_claim_unused_channel(true);
     dma_channel_config samp_conf = dma_channel_get_default_config(samp_chan);
 
@@ -64,7 +80,7 @@ int main() {
                           false            // start immediately
     );
 
-    //Channel 2
+    //Channel 2 DMA
     uint control_chan = dma_claim_unused_channel(true);
     dma_channel_config control_conf = dma_channel_get_default_config(control_chan);
 
@@ -94,13 +110,12 @@ int main() {
 
         // Print samples to stdout so you can display them in pyplot, excel, matlab
         for (int i = 0; i < CAPTURE_DEPTH; ++i) {
-            printf("%.2f, ;", (capture_buf[i] * ADC_CONVERT));
+            printf("%.2f\n", (capture_buf[i] * ADC_CONVERT));
             if (i % 10 == 9)
                 printf("\n");
         }
         dma_channel_start(control_chan);
         adc_run(true);
-        sleep_ms(1000);
     }
 
     return 0;
