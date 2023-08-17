@@ -4,6 +4,7 @@
 #include "hardware/adc.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
+#include "hardware/pwm.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
@@ -20,12 +21,21 @@ uint8_t * sample_address_pointer = &capture_buf[0];
 int main() {
     stdio_init_all();
 
+    //PWM on gpio 16
+    gpio_set_function(16, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(16);
+    pwm_set_enabled(slice_num, true);
+    //wypelnienie
+    pwm_set_wrap(slice_num, 200);
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, 100);
+    pwm_set_enabled(slice_num, true);
+
     adc_gpio_init(ADC0_CAPTURE_CHANNEL);
     adc_gpio_init(ADC1_CAPTURE_CHANNEL);
 
     adc_init();
 
-    adc_set_round_robin(00001); // Enable round-robin sampling of all 5 inputs.
+    adc_set_round_robin(0x3); // Enable round-robin sampling of all 5 inputs.
     adc_select_input(0); // Set starting ADC channel for round-robin mode.
 
     adc_set_clkdiv(0); // Run at max speed.
