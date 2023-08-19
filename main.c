@@ -108,10 +108,8 @@ int main() {
         adc_fifo_drain();
 
         // Print samples to stdout so you can display them in pyplot, excel, matlab
-        for (int i = 0; i < CAPTURE_DEPTH; i=i+2) {
+        for (int i = 0; i < CAPTURE_DEPTH; ++i) {
             printf("%.2f\n", (capture_buf[i] * ADC_CONVERT));
-            //if (i == CAPTURE_DEPTH - 1)
-                //printf("KOniec\r");
         }
         dma_channel_start(control_chan);
     }
