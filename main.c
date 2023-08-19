@@ -13,7 +13,7 @@
 #define ADC_RANGE (1 << 8)
 #define ADC_CONVERT (ADC_VREF / (ADC_RANGE - 1))
 
-#define CAPTURE_DEPTH 10
+#define CAPTURE_DEPTH 100
 
 uint8_t capture_buf[CAPTURE_DEPTH];
 uint8_t * sample_address_pointer = &capture_buf[0];
@@ -51,7 +51,7 @@ int main() {
 
     adc_init();
 
-    adc_set_round_robin(0x3); // Enable round-robin sampling of all 5 inputs.
+    adc_set_round_robin(0x3); // Enable round-robin sampling of 2 inputs.
     adc_select_input(0); // Set starting ADC channel for round-robin mode.
 
     adc_set_clkdiv(0); // Run at max speed.
@@ -99,23 +99,21 @@ int main() {
     );
 
     dma_start_channel_mask((1u << samp_chan));
-    adc_run(true) ;
-
 
     while(1)
     {
+        adc_run(true) ;
         dma_channel_wait_for_finish_blocking(samp_chan);
         adc_run(false);
         adc_fifo_drain();
 
         // Print samples to stdout so you can display them in pyplot, excel, matlab
-        for (int i = 0; i < CAPTURE_DEPTH; ++i) {
+        for (int i = 0; i < CAPTURE_DEPTH; i=i+2) {
             printf("%.2f\n", (capture_buf[i] * ADC_CONVERT));
-            if (i % 10 == 9)
-                printf("\n");
+            //if (i == CAPTURE_DEPTH - 1)
+                //printf("KOniec\r");
         }
         dma_channel_start(control_chan);
-        adc_run(true);
     }
 
     return 0;
