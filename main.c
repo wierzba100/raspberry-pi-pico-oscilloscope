@@ -77,7 +77,7 @@ int main() {
                           capture_buf,    // dst
                           &adc_hw->fifo,  // src
                           CAPTURE_DEPTH,  // transfer count
-                          false            // start immediately
+                          false            // Don't start immediately
     );
 
     //Channel 2 DMA
