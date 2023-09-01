@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include <string.h>
 #include "pico/stdlib.h"
 
 #include "hardware/adc.h"
 #include "hardware/dma.h"
-#include "hardware/irq.h"
 #include "hardware/pwm.h"
+#include "hardware/timer.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
@@ -13,7 +14,8 @@
 #define ADC_RANGE (1 << 8)
 #define ADC_CONVERT (ADC_VREF / (ADC_RANGE - 1))
 
-#define CAPTURE_DEPTH 100
+#define CAPTURE_DEPTH 200000
+#define BUFFER_SIZE 1024
 
 uint8_t capture_buf[CAPTURE_DEPTH];
 uint8_t * sample_address_pointer = &capture_buf[0];
@@ -39,12 +41,21 @@ int main() {
 
     //PWM on gpio 16
     gpio_set_function(16, GPIO_FUNC_PWM);
-    uint slice_num = pwm_gpio_to_slice_num(16);
-    pwm_set_enabled(slice_num, true);
+    uint slice_num_1 = pwm_gpio_to_slice_num(16);
+    pwm_set_enabled(slice_num_1, true);
 
-    //wypelnienie 50%, 50Hz
-    pwm_set_freq_duty(slice_num, PWM_CHAN_A, 50, 50);
-    pwm_set_enabled(slice_num, true);
+    //100kHz, 50%
+    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 100000, 50);
+    pwm_set_enabled(slice_num_1, true);
+
+    //PWM on gpio 18
+    gpio_set_function(18, GPIO_FUNC_PWM);
+    uint slice_num_2 = pwm_gpio_to_slice_num(18);
+    pwm_set_enabled(slice_num_2, true);
+
+    //50kHz, 50%
+    pwm_set_freq_duty(slice_num_2, PWM_CHAN_A, 50000, 50);
+    pwm_set_enabled(slice_num_2, true);
 
     adc_gpio_init(ADC0_CAPTURE_CHANNEL);
     adc_gpio_init(ADC1_CAPTURE_CHANNEL);
@@ -73,10 +84,11 @@ int main() {
     channel_config_set_write_increment(&samp_conf, true);
     channel_config_set_dreq(&samp_conf, DREQ_ADC); // pace data according to ADC
 
-    dma_channel_configure(samp_chan, &samp_conf,
-                          capture_buf,    // dst
-                          &adc_hw->fifo,  // src
-                          CAPTURE_DEPTH,  // transfer count
+    dma_channel_configure(samp_chan,    // Channel
+                          &samp_conf,   // Configuration
+                          capture_buf,    // Destination
+                          &adc_hw->fifo,  // Source
+                          CAPTURE_DEPTH,  // Transfer count
                           false            // Don't start immediately
     );
 
@@ -90,28 +102,45 @@ int main() {
     channel_config_set_chain_to(&control_conf, samp_chan); // pace data according to ADC
 
     dma_channel_configure(
-            control_chan,                         // Channel to be configured
-            &control_conf,                                  // The configuration we just created
-            &dma_hw->ch[samp_chan].write_addr,  // Write address (channel 0 read address)
-            &sample_address_pointer,              // Read address (POINTER TO AN ADDRESS)
-            1,                                    // Number of transfers, in this case each is 4 byte
-            false                                 // Don't start immediately.
+            control_chan,   // Channel
+            &control_conf,  // Configuration
+            &dma_hw->ch[samp_chan].write_addr,  // Destination
+            &sample_address_pointer,    // Read address
+            1,  // Number of transfers
+            false   // Don't start immediately.
     );
 
-    dma_start_channel_mask((1u << samp_chan));
+    char buffer[BUFFER_SIZE];
 
     while(1)
     {
-        adc_run(true) ;
-        dma_channel_wait_for_finish_blocking(samp_chan);
-        adc_run(false);
-        adc_fifo_drain();
-
-        // Print samples to stdout so you can display them in pyplot, excel, matlab
-        for (int i = 0; i < CAPTURE_DEPTH; ++i) {
-            printf("%.2f\n", (capture_buf[i] * ADC_CONVERT));
+        scanf("%1023s", buffer);
+        if(strcmp(buffer, "ON") == 0)
+        {
+            printf("Connected\n");
+            break;
         }
-        dma_channel_start(control_chan);
+    }
+
+    dma_start_channel_mask((1u << samp_chan));
+
+    adc_run(true) ;
+    dma_channel_wait_for_finish_blocking(samp_chan);
+    adc_run(false);
+    adc_fifo_drain();
+    dma_channel_start(control_chan);
+
+    for (int i = 0; i < CAPTURE_DEPTH; ++i)
+    {
+        printf("%u\n", capture_buf[i]);
+    }
+
+    printf("End\n");
+
+    while(1)
+    {
+        printf("Endless Loop\n");
+        sleep_ms(10);
     }
 
     return 0;
