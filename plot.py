@@ -1,26 +1,38 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-dict_data = np.load('channel_1.npz')
-data_1 = dict_data['arr_0']
-dict_data = np.load('channel_2.npz')
-data_2 = dict_data['arr_0']
+ADC_VREF = 3.3
+ADC_RANGE = (1 << 8)
+ADC_CONVERT = (ADC_VREF / (ADC_RANGE - 1))
 
-x_1 = data_1[:, 0]
-y_1 = data_1[:, 1]
+data = np.load('samples.npy')
 
-x_2 = data_2[:, 0]
-y_2 = data_2[:, 1]
+channel_1 = []
+channel_2 = []
+x_1 = []
+x_2 = []
+
+for i, item in enumerate(data):
+    if i % 2 == 0:
+        channel_1.append(int.from_bytes(item, byteorder='big') * ADC_CONVERT)
+    else:
+        channel_2.append(int.from_bytes(item, byteorder='big') * ADC_CONVERT)
+
+for i in range(100000):
+    x_1.append(i * 4)
+    x_2.append(2 + i * 4)
+
+print(channel_1)
 
 plt.subplot(2, 1, 1)
-plt.plot(x_1, y_1, label='100kHz', color='blue')
+plt.plot(x_1, channel_1, label='100kHz', color='blue')
 plt.title("Channel 1, 250kS/s")
 plt.xlabel("Microseconds") 
 plt.ylabel("Volts")
 plt.legend()
 
 plt.subplot(2, 1, 2)
-plt.plot(x_2, y_2, label='50kHz', color='red')
+plt.plot(x_2, channel_2, label='50kHz', color='red')
 plt.title("Channel 2, 250kS/s")
 plt.xlabel("Microseconds") 
 plt.ylabel("Volts")

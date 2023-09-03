@@ -5,14 +5,9 @@
 #include "hardware/adc.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
-#include "hardware/timer.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
-
-#define ADC_VREF 3.3
-#define ADC_RANGE (1 << 8)
-#define ADC_CONVERT (ADC_VREF / (ADC_RANGE - 1))
 
 #define CAPTURE_DEPTH 200000
 #define BUFFER_SIZE 1024
@@ -130,9 +125,10 @@ int main() {
     adc_fifo_drain();
     dma_channel_start(control_chan);
 
-    for (int i = 0; i < CAPTURE_DEPTH; ++i)
+    for (size_t i = 0; i < CAPTURE_DEPTH; ++i)
     {
-        printf("%u\n", capture_buf[i]);
+        putchar(capture_buf[i]);
+        putchar('\n');
     }
 
     printf("End\n");

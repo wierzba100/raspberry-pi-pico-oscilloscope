@@ -29,11 +29,10 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 # pull in common dependencies
 target_link_libraries(${PROJECT_NAME}
 					pico_stdlib
+					pico_stdio
 					hardware_adc
 					hardware_dma
-					hardware_irq
 					hardware_pwm
-					hardware_timer
 					pico_cyw43_arch_none)
 
 # create map/bin/hex/uf2 file etc.

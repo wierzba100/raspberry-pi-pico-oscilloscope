@@ -30,51 +30,19 @@ while True:
             czas_konca = time.time()
             break
         else:
-            tablica.append(line)
-print("CZAS")
-print(czas_konca-czas_startu)
-print("\n")
-print("\n")
-print("\n")
+            cleaned_message = line.replace(b'\r\n', b'')
+            #print(cleaned_message)
+            tablica.append(cleaned_message)
 
-counter_1 = 0
-counter_2 = 2
+print(f"CZAS: {czas_konca-czas_startu}")
 
-tablica_1 = np.zeros((100000, 2), dtype=np.byte)
-tablica_2 = np.zeros((100000, 2), dtype=np.byte)
-
-j=0
-
-for i in range(0, len(tablica), 2):
-    tablica_1[j, 0] = counter_1
-    tablica_1[j, 1] = tablica[i]
-    j = j + 1;
-    #counter_1 = counter_1 + 4
-
-j=0
-
-for i in range(1, len(tablica), 2):
-    tablica_2[j, 0] = counter_2
-    tablica_2[j, 1] = tablica[i]
-    j = j + 1;
-    #counter_2 = counter_2 + 4
+np.save('samples.npy', tablica)
 
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
 np.set_printoptions(threshold=sys.maxsize)
 
-np.save('channel_1.npy', tablica_1)
-np.save('channel_2.npy', tablica_2)
-
-data = np.load('channel_1.npy')
-print("Channel 1, 100KHz PWM, 50%, 100000 samples")
-#print(data)
-data = np.load('channel_2.npy')
-print("\n")
-print("\n")
-print("\n")
-print("\n")
-print("Channel 2, 50KHz PWM, 50%, 100000 samples")
-#print(data)
-
+data = np.load('samples.npy')
+print("Samples:")
+print(data)
 print("Done")
