@@ -2,9 +2,6 @@
 
 # Grabs raw data from the Pico's UART
 
-# Usage:
-# eg. python3 plotter /dev/ttyACM0 10
-
 import serial
 import numpy as np
 import sys
