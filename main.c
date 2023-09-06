@@ -112,7 +112,6 @@ int main() {
         scanf("%1023s", buffer);
         if(strcmp(buffer, "ON") == 0)
         {
-            printf("Connected\n");
             break;
         }
     }
