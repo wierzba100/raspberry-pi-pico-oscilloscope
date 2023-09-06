@@ -11,11 +11,7 @@ tablica = []
 
 ser = serial.Serial("COM2", 115200, timeout=0)
 
-while True:
-    ser.write(str.encode("ON\n"))
-    line = ser.readline()
-    if(line == b'Connected\r\n'):
-        break
+ser.write(str.encode("ON\n"))
 
 czas_startu = time.time()
 print("start")
@@ -23,17 +19,16 @@ print("start")
 while True:
     line = ser.readline()
     if((line != b'') and (line != b' ') and (line != b'\r\n')):
-        if(line == b'End\r\n'):
-            czas_konca = time.time()
-            break
-        else:
-            cleaned_message = line.replace(b'\r\n', b'')
-            #print(cleaned_message)
-            tablica.append(cleaned_message)
+        #print(line)
+        cleaned_message = line.replace(b'\r\n', b'')
+        decoded_bytes = np.frombuffer(line, dtype=np.uint8)
+        #print(decoded_bytes)
+        break
 
+czas_konca = time.time()
 print(f"CZAS: {czas_konca-czas_startu}")
 
-np.save('samples.npy', tablica)
+np.save('samples.npy', decoded_bytes)
 
 np.set_printoptions(suppress=True)
 np.set_printoptions(precision=2)
@@ -41,5 +36,5 @@ np.set_printoptions(threshold=sys.maxsize)
 
 data = np.load('samples.npy')
 print("Samples:")
-print(data)
+#print(data)
 print("Done")

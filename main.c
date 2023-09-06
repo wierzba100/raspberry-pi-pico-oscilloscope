@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <string.h>
+
 #include "pico/stdlib.h"
+#include "pico/stdio.h"
+#include "pico/stdio/driver.h"
 
 #include "hardware/adc.h"
 #include "hardware/dma.h"
@@ -30,6 +33,7 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
 
     return wrap;
 }
+
 
 int main() {
     stdio_init_all();
@@ -124,13 +128,7 @@ int main() {
     adc_fifo_drain();
     dma_channel_start(control_chan);
 
-    for (size_t i = 0; i < CAPTURE_DEPTH; ++i)
-    {
-        putchar(capture_buf[i]);
-        putchar('\n');
-    }
-
-    printf("End\n");
+    stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
 
     while(1)
     {
