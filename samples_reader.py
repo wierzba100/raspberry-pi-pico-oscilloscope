@@ -9,7 +9,7 @@ import time
 
 tablica = []
 
-ser = serial.Serial("COM2", 115200, timeout=0)
+ser = serial.Serial("COM2", 115200, timeout=None)
 
 ser.write(str.encode("ON\n"))
 
@@ -17,14 +17,16 @@ czas_startu = time.time()
 print("start")
 
 while True:
-    line = ser.readline()
-    if((line != b'') and (line != b' ') and (line != b'\r\n')):
-        #print(line)
-        cleaned_message = line.replace(b'\r\n', b'')
-        decoded_bytes = np.frombuffer(line, dtype=np.uint8)
-        #print(decoded_bytes)
-        break
+    data_raw = ser.read(1)
+    if data_raw == b'\x01':
+        data_raw = ser.read(200002)
+        #print(data_raw)
+        cleaned_message = data_raw.replace(b'\r\n', b'')
+        decoded_bytes = np.frombuffer(cleaned_message, dtype=np.uint8)
+        break;
 
+
+ser.close()
 czas_konca = time.time()
 print(f"CZAS: {czas_konca-czas_startu}")
 

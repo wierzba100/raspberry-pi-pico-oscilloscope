@@ -128,7 +128,9 @@ int main() {
     adc_fifo_drain();
     dma_channel_start(control_chan);
 
+    putchar(1);
     stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
+    putchar('\n');
 
     while(1)
     {
