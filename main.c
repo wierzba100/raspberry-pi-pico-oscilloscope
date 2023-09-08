@@ -8,6 +8,7 @@
 #include "hardware/adc.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
+#include "hardware/timer.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
@@ -128,8 +129,16 @@ int main() {
     adc_fifo_drain();
     dma_channel_start(control_chan);
 
-    putchar(1);
+    uint32_t t_start = 0;
+    uint32_t t_end = 0;
+
+    t_start = time_us_32();
     stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
+    t_end = time_us_32();
+
+    printf("%d\n", t_end - t_start);
+
+    stdio_flush();
 
     while(1)
     {

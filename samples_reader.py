@@ -12,21 +12,20 @@ ser = serial.Serial("COM2", 115200, timeout=None)
 
 ser.write(str.encode("ON\n"))
 
-czas_startu = time.time()
 print("Start")
+czas_startu = time.time()
 
-while True:
-    data_raw = ser.read(1)
-    if data_raw == b'\x01':
-        data_raw = ser.read(200000)
-        print(data_raw)
-        decoded_bytes = np.frombuffer(data_raw, dtype=np.uint8)
-        break;
+data_raw = ser.read(200000)
+decoded_bytes = np.frombuffer(data_raw, dtype=np.uint8)
 
+czas_konca = time.time()
+
+line = ser.readline()
+line = int(line)
 
 ser.close()
-czas_konca = time.time()
-print(f"CZAS: {czas_konca-czas_startu}")
+print(f"Czas nadawania:  {line * 0.000001} s")
+print(f"Czas odbierania: {czas_konca-czas_startu} s")
 
 np.save('samples.npy', decoded_bytes)
 print("Done")
