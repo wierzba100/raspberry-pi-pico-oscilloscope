@@ -134,11 +134,10 @@ int main() {
 
     t_start = time_us_32();
     stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
+    stdio_flush();
     t_end = time_us_32();
 
     printf("%d\n", t_end - t_start);
-
-    stdio_flush();
 
     while(1)
     {
