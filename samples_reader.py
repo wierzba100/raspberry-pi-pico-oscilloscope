@@ -4,28 +4,21 @@
 
 import serial
 import numpy as np
-import time
 
-tablica = []
+tablica = np.zeros((2,5,400),dtype=np.uint8)
 
 ser = serial.Serial("COM2", 115200, timeout=None)
 
-ser.write(str.encode("ON\n"))
-
-print("Start")
-czas_startu = time.time()
-
-data_raw = ser.read(200000)
-decoded_bytes = np.frombuffer(data_raw, dtype=np.uint8)
-
-czas_konca = time.time()
-
-line = ser.readline()
-line = int(line)
+for i in range(5):
+    ser.write(str.encode("ON\n"))
+    data_raw = ser.read(800)
+    decoded_bytes = np.frombuffer(data_raw, dtype=np.uint8)
+    
+    tablica[0, i, :400] = decoded_bytes[::2]
+    tablica[1, i, :400] = decoded_bytes[1::2]
+    
 
 ser.close()
-print(f"Czas nadawania:  {line * 0.000001} s")
-print(f"Czas odbierania: {czas_konca-czas_startu} s")
 
-np.save('samples.npy', decoded_bytes)
+np.save('samples.npy', tablica)
 print("Done")

@@ -8,12 +8,12 @@
 #include "hardware/adc.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
-#include "hardware/timer.h"
+#include "hardware/resets.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
 
-#define CAPTURE_DEPTH 200000
+#define CAPTURE_DEPTH 800
 #define BUFFER_SIZE 1024
 
 uint8_t capture_buf[CAPTURE_DEPTH];
@@ -45,7 +45,7 @@ int main() {
     pwm_set_enabled(slice_num_1, true);
 
     //100kHz, 50%
-    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 100000, 50);
+    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 10000, 50);
     pwm_set_enabled(slice_num_1, true);
 
     //PWM on gpio 18
@@ -54,7 +54,7 @@ int main() {
     pwm_set_enabled(slice_num_2, true);
 
     //50kHz, 50%
-    pwm_set_freq_duty(slice_num_2, PWM_CHAN_A, 50000, 50);
+    pwm_set_freq_duty(slice_num_2, PWM_CHAN_A, 5000, 50);
     pwm_set_enabled(slice_num_2, true);
 
     adc_gpio_init(ADC0_CAPTURE_CHANNEL);
@@ -64,7 +64,6 @@ int main() {
 
     adc_set_round_robin(0x3); // Enable round-robin sampling of 2 inputs.
     adc_select_input(0); // Set starting ADC channel for round-robin mode.
-
     adc_set_clkdiv(0); // Run at max speed.
 
     adc_fifo_setup(
@@ -112,37 +111,21 @@ int main() {
 
     char buffer[BUFFER_SIZE];
 
+    dma_start_channel_mask((1u << samp_chan));
+
     while(1)
     {
         scanf("%1023s", buffer);
-        if(strcmp(buffer, "ON") == 0)
-        {
-            break;
-        }
-    }
+        adc_select_input(0); // Set starting ADC channel for round-robin mode.
 
-    dma_start_channel_mask((1u << samp_chan));
+        adc_run(true) ;
+        dma_channel_wait_for_finish_blocking(samp_chan);
+        adc_run(false);
+        adc_fifo_drain();
+        dma_channel_start(control_chan);
 
-    adc_run(true) ;
-    dma_channel_wait_for_finish_blocking(samp_chan);
-    adc_run(false);
-    adc_fifo_drain();
-    dma_channel_start(control_chan);
-
-    uint32_t t_start = 0;
-    uint32_t t_end = 0;
-
-    t_start = time_us_32();
-    stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
-    stdio_flush();
-    t_end = time_us_32();
-
-    printf("%d\n", t_end - t_start);
-
-    while(1)
-    {
-        printf("Endless Loop\n");
-        sleep_ms(10);
+        stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
+        stdio_flush();
     }
 
     return 0;
