@@ -115,17 +115,16 @@ int main() {
 
     while(1)
     {
-        scanf("%1023s", buffer);
-        adc_select_input(0); // Set starting ADC channel for round-robin mode.
+        fgets(buffer, BUFFER_SIZE, stdin); //waiting for input
 
-        adc_run(true) ;
-        dma_channel_wait_for_finish_blocking(samp_chan);
-        adc_run(false);
-        adc_fifo_drain();
-        dma_channel_start(control_chan);
+        adc_run(true) ; //starting adc conversion
+        dma_channel_wait_for_finish_blocking(samp_chan); //wait for DMA to finish transfer
+        adc_run(false); //stopping adc conversion
 
-        stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH);
-        stdio_flush();
+        stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH); //sending bytes
+        stdio_flush(); //flush the buffer
+
+        dma_channel_start(control_chan); //restart the sample channel
     }
 
     return 0;
