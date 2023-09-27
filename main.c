@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -8,7 +8,6 @@
 #include "hardware/adc.h"
 #include "hardware/dma.h"
 #include "hardware/pwm.h"
-#include "hardware/resets.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
@@ -16,8 +15,7 @@
 #define CAPTURE_DEPTH 800
 #define BUFFER_SIZE 1024
 
-uint8_t capture_buf[CAPTURE_DEPTH];
-uint8_t * sample_address_pointer = &capture_buf[0];
+#define ADC_TRIGGER_THRESHOLD 2047 //max value of 12bit ADC/2
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
 {
@@ -38,6 +36,8 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
 
 int main() {
     stdio_init_all();
+
+    uint8_t * sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(char));
 
     //PWM on gpio 16
     gpio_set_function(16, GPIO_FUNC_PWM);
@@ -62,9 +62,7 @@ int main() {
 
     adc_init();
 
-    adc_set_round_robin(0x3); // Enable round-robin sampling of 2 inputs.
-    adc_select_input(0); // Set starting ADC channel for round-robin mode.
-    adc_set_clkdiv(0); // Run at max speed.
+    adc_set_clkdiv(0); // Run at max speed
 
     adc_fifo_setup(
             true,    // Write each completed conversion to the sample FIFO
@@ -85,7 +83,7 @@ int main() {
 
     dma_channel_configure(samp_chan,    // Channel
                           &samp_conf,   // Configuration
-                          capture_buf,    // Destination
+                          sample_address_pointer,    // Destination
                           &adc_hw->fifo,  // Source
                           CAPTURE_DEPTH,  // Transfer count
                           false            // Don't start immediately
@@ -113,19 +111,47 @@ int main() {
 
     dma_start_channel_mask((1u << samp_chan));
 
+    uint16_t new_value,old_value;
+
     while(1)
     {
+        adc_set_round_robin(0x0); // Disable round-robin
+        adc_select_input(0); // Set starting ADC channel for round-robin mode.
+
         fgets(buffer, BUFFER_SIZE, stdin); //waiting for input
 
-        adc_run(true) ; //starting adc conversion
+        while (!adc_fifo_is_empty())
+        {
+            (void) adc_fifo_get();
+        }
+
+
+        old_value = adc_read();
+        (void) adc_fifo_get();
+        while (1)
+        {
+            new_value = adc_read();
+            (void) adc_fifo_get();
+            if ( ( new_value >= ADC_TRIGGER_THRESHOLD) && ( old_value < ADC_TRIGGER_THRESHOLD) )
+            {
+                break;
+            }
+            old_value = new_value;
+        }
+
+        dma_channel_start(control_chan); //restart the sample channel
+
+        adc_set_round_robin(0x3); // Enable round-robin sampling of 2 inputs.
+
+        adc_run(true); //starting adc conversion
         dma_channel_wait_for_finish_blocking(samp_chan); //wait for DMA to finish transfer
         adc_run(false); //stopping adc conversion
 
-        stdio_usb.out_chars((const char *)&capture_buf[0], CAPTURE_DEPTH); //sending bytes
+        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH); //sending bytes
         stdio_flush(); //flush the buffer
-
-        dma_channel_start(control_chan); //restart the sample channel
     }
+
+    free(sample_address_pointer);
 
     return 0;
 }
