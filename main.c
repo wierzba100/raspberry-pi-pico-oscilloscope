@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -12,10 +13,8 @@
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
 
-#define CAPTURE_DEPTH 800
-#define BUFFER_SIZE 1024
-
-#define ADC_TRIGGER_THRESHOLD 2047 //max value of 12bit ADC/2
+#define CAPTURE_DEPTH 1000
+#define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
 {
@@ -31,6 +30,12 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
     pwm_set_chan_level(slice_num, chan, wrap * duty / 100);
 
     return wrap;
+}
+
+void decodeTriggerMessage(const char *input, char *triggerChannel, uint16_t *triggerValue)
+{
+    *triggerChannel = input[0];
+    *triggerValue = (input[3] << 8) | input[2];
 }
 
 
@@ -107,24 +112,26 @@ int main() {
             false   // Don't start immediately.
     );
 
-    char buffer[BUFFER_SIZE];
+    char *buffer = calloc(BUFFER_SIZE, sizeof(char));
 
     dma_start_channel_mask((1u << samp_chan));
 
-    uint16_t new_value,old_value;
+    uint16_t new_value, old_value, triggerValue;
+    char triggerChannel;
 
     while(1)
     {
-        adc_set_round_robin(0x0); // Disable round-robin
-        adc_select_input(0); // Set starting ADC channel for round-robin mode.
-
         fgets(buffer, BUFFER_SIZE, stdin); //waiting for input
+
+        decodeTriggerMessage(buffer, &triggerChannel, &triggerValue); //Decode message with trigger setup
+
+        adc_set_round_robin(0x0); // Disable round-robin
+        adc_select_input(triggerChannel); // Set starting ADC channel for round-robin mode.
 
         while (!adc_fifo_is_empty())
         {
             (void) adc_fifo_get();
         }
-
 
         old_value = adc_read();
         (void) adc_fifo_get();
@@ -132,7 +139,7 @@ int main() {
         {
             new_value = adc_read();
             (void) adc_fifo_get();
-            if ( ( new_value >= ADC_TRIGGER_THRESHOLD) && ( old_value < ADC_TRIGGER_THRESHOLD) )
+            if ( ( new_value >= triggerValue) && ( old_value < triggerValue) )
             {
                 break;
             }
@@ -141,6 +148,7 @@ int main() {
 
         dma_channel_start(control_chan); //restart the sample channel
 
+        adc_select_input(0);
         adc_set_round_robin(0x3); // Enable round-robin sampling of 2 inputs.
 
         adc_run(true); //starting adc conversion
@@ -152,6 +160,7 @@ int main() {
     }
 
     free(sample_address_pointer);
+    free(buffer);
 
     return 0;
 }
