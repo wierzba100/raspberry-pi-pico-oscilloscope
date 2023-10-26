@@ -7,13 +7,14 @@ import numpy as np
 import struct
 
 ADC_VREF = 3.3
-ADC_RANGE = (1 << 12)
+ADC_RANGE = (1 << 8)
 ADC_CONVERT = (ADC_VREF / (ADC_RANGE - 1))
 TRIGGER_VOLTAGE = 2.00 #user
 TRIGGER_VALUE = int(TRIGGER_VOLTAGE / ADC_CONVERT)
-TRIGGER_CHANNEL = 0 #user
+TRIGGER_CHANNEL = 1 #user
+SAMPLING_MODE = 3 #user
 
-data_to_send = struct.pack('BH', TRIGGER_CHANNEL, TRIGGER_VALUE)
+data_to_send = struct.pack('BBB', TRIGGER_CHANNEL, SAMPLING_MODE, TRIGGER_VALUE)
 data_to_send = data_to_send + b'\n'
 
 tablica = np.zeros((5,2,500),dtype=np.uint8)
