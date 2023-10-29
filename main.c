@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
@@ -12,7 +13,7 @@
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
 
-#define CAPTURE_DEPTH 1000
+#define CAPTURE_DEPTH 2000
 #define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
@@ -31,17 +32,19 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
     return wrap;
 }
 
-void decodeTriggerMessage(const char *input, char *triggerChannel, uint16_t *triggerValue)
+void decodeTriggerMessage(const char *input, char *triggerChannel, uint8_t *triggerValue, char *samplingMode)
 {
     *triggerChannel = input[0];
-    *triggerValue = (input[3] << 8) | input[2];
+    *samplingMode = input[1];
+    *triggerValue = input[2];
 }
 
 
 int main() {
     stdio_init_all();
 
-    uint8_t * sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(char));
+    uint8_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(char));
+    char *buffer = calloc(BUFFER_SIZE, sizeof(char));
 
     //PWM on gpio 16
     gpio_set_function(16, GPIO_FUNC_PWM);
@@ -49,7 +52,7 @@ int main() {
     pwm_set_enabled(slice_num_1, true);
 
     //100kHz, 50%
-    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 10000, 50);
+    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 5000, 50);
     pwm_set_enabled(slice_num_1, true);
 
     //PWM on gpio 18
@@ -67,6 +70,7 @@ int main() {
     adc_init();
 
     adc_set_clkdiv(0); // Run at max speed
+    adc_select_input(0);
 
     adc_fifo_setup(
             true,    // Write each completed conversion to the sample FIFO
@@ -111,50 +115,40 @@ int main() {
             false   // Don't start immediately.
     );
 
-    char *buffer = calloc(BUFFER_SIZE, sizeof(char));
-
     dma_start_channel_mask((1u << samp_chan));
 
-    uint16_t new_value, old_value, triggerValue;
-    char triggerChannel;
+    uint8_t triggerValue;
+    char triggerChannel, samplingMode;
+    bool isTriggerTriggered;
 
     while(1)
     {
         fgets(buffer, BUFFER_SIZE, stdin); //waiting for input
 
-        decodeTriggerMessage(buffer, &triggerChannel, &triggerValue); //Decode message with trigger setup
+        decodeTriggerMessage(buffer, &triggerChannel, &triggerValue, &samplingMode); //Decode message with trigger setup
+        adc_set_round_robin(samplingMode); // Enable round-robin sampling of 2 inputs.
 
-        adc_set_round_robin(0x0); // Disable round-robin
-        adc_select_input(triggerChannel); // Set starting ADC channel for round-robin mode.
+        isTriggerTriggered=false;
 
-        while (!adc_fifo_is_empty())
+        while(!isTriggerTriggered)
         {
-            (void) adc_fifo_get();
-        }
+            dma_channel_start(control_chan); //restart the sample channel
 
-        old_value = adc_read();
-        (void) adc_fifo_get();
-        while (1)
-        {
-            new_value = adc_read();
-            (void) adc_fifo_get();
-            if ( ( new_value >= triggerValue) && ( old_value < triggerValue) )
+            adc_run(true); //starting adc conversion
+            dma_channel_wait_for_finish_blocking(samp_chan); //wait for DMA to finish transfer
+            adc_run(false); //stopping adc conversion
+
+            for(int i=triggerChannel;i<CAPTURE_DEPTH/2;i=i+2)
             {
-                break;
+                if ( ( sample_address_pointer[i+2] >= triggerValue ) && ( sample_address_pointer[i] < triggerValue) )
+                {
+                    stdio_usb.out_chars((const char *)&sample_address_pointer[i+2-triggerChannel], CAPTURE_DEPTH/2); //sending bytes
+                    isTriggerTriggered = true; //activate trigger
+                    break;
+                }
             }
-            old_value = new_value;
         }
 
-        dma_channel_start(control_chan); //restart the sample channel
-
-        adc_select_input(0);
-        adc_set_round_robin(0x3); // Enable round-robin sampling of 2 inputs.
-
-        adc_run(true); //starting adc conversion
-        dma_channel_wait_for_finish_blocking(samp_chan); //wait for DMA to finish transfer
-        adc_run(false); //stopping adc conversion
-
-        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH); //sending bytes
         stdio_flush(); //flush the buffer
     }
 
