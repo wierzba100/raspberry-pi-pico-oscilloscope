@@ -1,19 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #include "pico/stdlib.h"
 #include "pico/stdio.h"
 #include "pico/stdio/driver.h"
 
 #include "hardware/adc.h"
-#include "hardware/dma.h"
 #include "hardware/pwm.h"
 
 #define ADC0_CAPTURE_CHANNEL 26
 #define ADC1_CAPTURE_CHANNEL 27
 
-#define CAPTURE_DEPTH 2000
+#define PWM0_GPIO 16
+#define PWM1_GPIO 18
+
+#define CAPTURE_DEPTH 200
 #define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
@@ -32,35 +33,42 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
     return wrap;
 }
 
-void decodeTriggerMessage(const char *input, char *triggerChannel, uint8_t *triggerValue, char *samplingMode)
+void decodeTriggerMessage(const char *input, uint8_t *triggerChannel, uint16_t *triggerValue, uint8_t *samplingMode)
 {
     *triggerChannel = input[0];
     *samplingMode = input[1];
-    *triggerValue = input[2];
+    *triggerValue = (input[3] << 8) | input[2];
 }
 
+inline static uint16_t myAdc_read(void)
+{
+    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
+    while (!(ADC_CS_READY_BITS & adc_hw->cs));
+
+    return (uint16_t) adc_hw->result;
+}
 
 int main() {
     stdio_init_all();
 
-    uint8_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(char));
+    uint16_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(uint16_t));
     char *buffer = calloc(BUFFER_SIZE, sizeof(char));
 
     //PWM on gpio 16
-    gpio_set_function(16, GPIO_FUNC_PWM);
-    uint slice_num_1 = pwm_gpio_to_slice_num(16);
+    gpio_set_function(PWM0_GPIO, GPIO_FUNC_PWM);
+    uint slice_num_1 = pwm_gpio_to_slice_num(PWM0_GPIO);
     pwm_set_enabled(slice_num_1, true);
 
-    //100kHz, 50%
-    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 5000, 50);
+    //10kHz, 50%
+    pwm_set_freq_duty(slice_num_1, PWM_CHAN_A, 10000, 50);
     pwm_set_enabled(slice_num_1, true);
 
     //PWM on gpio 18
-    gpio_set_function(18, GPIO_FUNC_PWM);
-    uint slice_num_2 = pwm_gpio_to_slice_num(18);
+    gpio_set_function(PWM1_GPIO, GPIO_FUNC_PWM);
+    uint slice_num_2 = pwm_gpio_to_slice_num(PWM1_GPIO);
     pwm_set_enabled(slice_num_2, true);
 
-    //50kHz, 50%
+    //5kHz, 50%
     pwm_set_freq_duty(slice_num_2, PWM_CHAN_A, 5000, 50);
     pwm_set_enabled(slice_num_2, true);
 
@@ -70,84 +78,42 @@ int main() {
     adc_init();
 
     adc_set_clkdiv(0); // Run at max speed
-    adc_select_input(0);
 
-    adc_fifo_setup(
-            true,    // Write each completed conversion to the sample FIFO
-            true,    // Enable DMA data request (DREQ)
-            1,       // Assert DREQ (and IRQ) at least 1 sample present
-            false,   // Omit ERR bit (bit 15) since we have 8 bit reads.
-            true     // shift each sample to 8 bits when pushing to FIFO
-    );
-
-    //Channel 1 DMA
-    uint samp_chan = dma_claim_unused_channel(true);
-    dma_channel_config samp_conf = dma_channel_get_default_config(samp_chan);
-
-    channel_config_set_transfer_data_size(&samp_conf, DMA_SIZE_8);
-    channel_config_set_read_increment(&samp_conf, false); // read from adc FIFO reg.
-    channel_config_set_write_increment(&samp_conf, true);
-    channel_config_set_dreq(&samp_conf, DREQ_ADC); // pace data according to ADC
-
-    dma_channel_configure(samp_chan,    // Channel
-                          &samp_conf,   // Configuration
-                          sample_address_pointer,    // Destination
-                          &adc_hw->fifo,  // Source
-                          CAPTURE_DEPTH,  // Transfer count
-                          false            // Don't start immediately
-    );
-
-    //Channel 2 DMA
-    uint control_chan = dma_claim_unused_channel(true);
-    dma_channel_config control_conf = dma_channel_get_default_config(control_chan);
-
-    channel_config_set_transfer_data_size(&control_conf, DMA_SIZE_32);
-    channel_config_set_read_increment(&control_conf, false); // read from adc FIFO reg.
-    channel_config_set_write_increment(&control_conf, false);
-    channel_config_set_chain_to(&control_conf, samp_chan); // pace data according to ADC
-
-    dma_channel_configure(
-            control_chan,   // Channel
-            &control_conf,  // Configuration
-            &dma_hw->ch[samp_chan].write_addr,  // Destination
-            &sample_address_pointer,    // Read address
-            1,  // Number of transfers
-            false   // Don't start immediately.
-    );
-
-    dma_start_channel_mask((1u << samp_chan));
-
-    uint8_t triggerValue;
-    char triggerChannel, samplingMode;
-    bool isTriggerTriggered;
+    uint16_t triggerValue, new_value, old_value;
+    uint8_t triggerChannel, samplingMode;
 
     while(1)
     {
         fgets(buffer, BUFFER_SIZE, stdin); //waiting for input
 
-        decodeTriggerMessage(buffer, &triggerChannel, &triggerValue, &samplingMode); //Decode message with trigger setup
-        adc_set_round_robin(samplingMode); // Enable round-robin sampling of 2 inputs.
+        decodeTriggerMessage(buffer, &triggerChannel, &triggerValue, &samplingMode); //Decode message with trigger and sampling setup
 
-        isTriggerTriggered=false;
+        adc_select_input(triggerChannel); //set input for trigger
+        adc_set_round_robin(samplingMode); //set sampling mode
 
-        while(!isTriggerTriggered)
+        old_value = myAdc_read(); //read old value for checking trigger
+        (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
+        while (1)
         {
-            dma_channel_start(control_chan); //restart the sample channel
-
-            adc_run(true); //starting adc conversion
-            dma_channel_wait_for_finish_blocking(samp_chan); //wait for DMA to finish transfer
-            adc_run(false); //stopping adc conversion
-
-            for(int i=triggerChannel;i<CAPTURE_DEPTH/2;i=i+2)
+            new_value = myAdc_read();
+            if ( ( new_value >= triggerValue) && ( old_value < triggerValue) )
             {
-                if ( ( sample_address_pointer[i+2] >= triggerValue ) && ( sample_address_pointer[i] < triggerValue) )
-                {
-                    stdio_usb.out_chars((const char *)&sample_address_pointer[i+2-triggerChannel], CAPTURE_DEPTH/2); //sending bytes
-                    isTriggerTriggered = true; //activate trigger
-                    break;
-                }
+                break; //trigger triggered
             }
+            (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
+            old_value = new_value;
         }
+
+        sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
+        sample_address_pointer[1-triggerChannel]=myAdc_read();
+
+        adc_select_input((samplingMode+1)%2); //starting acquisitions from correct channel according to sampling mode
+        for(int i=2;i<CAPTURE_DEPTH;i++)
+        {
+            sample_address_pointer[i]=myAdc_read(); //reading values from adc
+        }
+
+        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH); //sending bytes
 
         stdio_flush(); //flush the buffer
     }
