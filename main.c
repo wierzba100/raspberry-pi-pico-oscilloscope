@@ -14,7 +14,7 @@
 #define PWM0_GPIO 16
 #define PWM1_GPIO 18
 
-#define CAPTURE_DEPTH 200
+#define CAPTURE_DEPTH 1000
 #define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
@@ -52,7 +52,7 @@ int main() {
     stdio_init_all();
 
     uint16_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(uint16_t));
-    char *buffer = calloc(BUFFER_SIZE, sizeof(char));
+    char *received_string = calloc(BUFFER_SIZE, sizeof(char));
 
     //PWM on gpio 16
     gpio_set_function(PWM0_GPIO, GPIO_FUNC_PWM);
@@ -84,9 +84,9 @@ int main() {
 
     while(1)
     {
-        fgets(buffer, BUFFER_SIZE, stdin); //waiting for input
+        fgets(received_string, BUFFER_SIZE, stdin); //waiting for input
 
-        decodeTriggerMessage(buffer, &triggerChannel, &triggerValue, &samplingMode); //Decode message with trigger and sampling setup
+        decodeTriggerMessage(received_string, &triggerChannel, &triggerValue, &samplingMode); //Decode message with trigger and sampling setup
 
         adc_select_input(triggerChannel); //set input for trigger
         adc_set_round_robin(samplingMode); //set sampling mode
@@ -113,13 +113,13 @@ int main() {
             sample_address_pointer[i]=myAdc_read(); //reading values from adc
         }
 
-        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH); //sending bytes
+        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH*sizeof(uint16_t) ); //sending bytes
 
         stdio_flush(); //flush the buffer
     }
 
     free(sample_address_pointer);
-    free(buffer);
+    free(received_string);
 
     return 0;
 }
