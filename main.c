@@ -14,7 +14,7 @@
 #define PWM0_GPIO 16
 #define PWM1_GPIO 18
 
-#define CAPTURE_DEPTH 1000
+#define CAPTURE_DEPTH 100
 #define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
@@ -33,25 +33,24 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
     return wrap;
 }
 
-void decodeTriggerMessage(const char *input, uint8_t *triggerChannel, uint16_t *triggerValue, uint8_t *samplingMode)
+void decodeTriggerMessage(const char *input, uint8_t *triggerChannel, uint8_t *triggerValue, uint8_t *samplingMode)
 {
     *triggerChannel = input[0];
     *samplingMode = input[1];
-    *triggerValue = (input[3] << 8) | input[2];
+    *triggerValue = input[2];
 }
 
-inline static uint16_t myAdc_read(void)
+inline static uint8_t myAdc_read(void)
 {
-    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
     while (!(ADC_CS_READY_BITS & adc_hw->cs));
-
-    return (uint16_t) adc_hw->result;
+    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
+    return (uint8_t) ((adc_hw->result) >> 4);
 }
 
 int main() {
     stdio_init_all();
 
-    uint16_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(uint16_t));
+    uint8_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(uint8_t));
     char *received_string = calloc(BUFFER_SIZE, sizeof(char));
 
     //PWM on gpio 16
@@ -79,8 +78,7 @@ int main() {
 
     adc_set_clkdiv(0); // Run at max speed
 
-    uint16_t triggerValue, new_value, old_value;
-    uint8_t triggerChannel, samplingMode;
+    uint8_t triggerChannel, samplingMode, triggerValue, new_value, old_value;
 
     while(1)
     {
@@ -91,7 +89,9 @@ int main() {
         adc_select_input(triggerChannel); //set input for trigger
         adc_set_round_robin(samplingMode); //set sampling mode
 
+        hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS); //start conversion
         old_value = myAdc_read(); //read old value for checking trigger
+
         (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
         while (1)
         {
@@ -105,15 +105,15 @@ int main() {
         }
 
         sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
-        sample_address_pointer[1-triggerChannel]=myAdc_read();
+        sample_address_pointer[1-triggerChannel] = myAdc_read();
 
         adc_select_input((samplingMode+1)%2); //starting acquisitions from correct channel according to sampling mode
         for(int i=2;i<CAPTURE_DEPTH;i++)
         {
-            sample_address_pointer[i]=myAdc_read(); //reading values from adc
+            sample_address_pointer[i] = myAdc_read(); //reading values from adc
         }
 
-        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH*sizeof(uint16_t) ); //sending bytes
+        stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH ); //sending bytes
 
         stdio_flush(); //flush the buffer
     }
