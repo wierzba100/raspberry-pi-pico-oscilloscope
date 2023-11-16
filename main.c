@@ -109,28 +109,17 @@ int main() {
             new_value = myAdc_read();
             if ( ( new_value >= triggerValue) && ( old_value < triggerValue) )
             {
-                sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
-                sample_address_pointer[1-triggerChannel] = myAdc_read();
 
                 if((samplingMode == 3) && (triggerChannel == 1))
                 {
+                    sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
+                    sample_address_pointer[1-triggerChannel] = myAdc_read();
                     (void) myAdc_read();
-                }
-
-                //trigger triggered
-                /*if(samplingMode != 3)
+                }else
                 {
                     sample_address_pointer[0] = new_value; //set bits in correct order, CH1 first, CH2 second
                     sample_address_pointer[1] = myAdc_read();
-                }else
-                {
-                    sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
-                    sample_address_pointer[1-triggerChannel] = myAdc_read();
-                    if(triggerChannel == 0)
-                    {
-                        adc_select_input(0); //starting acquisitions from correct channel according to sampling mode
-                    }
-                }*/
+                }
 
                 for(int i=2;i<CAPTURE_DEPTH;i++)
                 {
