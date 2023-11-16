@@ -4,32 +4,29 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 ADC_VREF = 3.3
-ADC_RANGE = (1 << 12)
+ADC_RANGE = (1 << 8)
 ADC_CONVERT = (ADC_VREF / (ADC_RANGE - 1))
 LEVEL_ZERO = 1.65
-TRIGGER_VOLTAGE = 1.00 #user
-TRIGGER_CHANNEL = 1 #user
+TRIGGER_VOLTAGE = 1.65 #user
 
 data = np.load('samples.npy')
-
 data = data.astype(float)
-
 data = data * ADC_CONVERT
 
+trigger_options_index = 6
 plt.rc('font', size=11)
-for channel in range(2):
-    for i in range(5):
-        plt.subplot(5, 2, i * 2 + channel + 1)
-        plt.axhline(LEVEL_ZERO, color='black')
-        if channel == TRIGGER_CHANNEL:
-            plt.axhline(TRIGGER_VOLTAGE, color='grey', linestyle='--')
-        label = f'Channel {channel + 1}'
-        color = 'blue' if channel == 0 else 'red'
-        plt.plot(np.arange(len(data[i][channel])), data[i][channel], color=color, label=label, marker='o')
-        plt.title(f"Channel {channel + 1}, Acquisition {i + 1}, 250kS/s")
-        plt.xlabel("Samples")
-        plt.ylabel("Volts")
-        plt.legend(loc='upper right')
-        plt.grid()
+plt.subplot(1, 1, 1)
+if(trigger_options_index < 6):
+    plt.plot(np.arange(len(data[trigger_options_index])), data[trigger_options_index], color='blue', marker='o')
+else:
+    plt.plot(np.arange(len(data[trigger_options_index][::2])), data[trigger_options_index][::2], color='blue', marker='o')
+    plt.plot(np.arange(len(data[trigger_options_index][1::2])), data[trigger_options_index][1::2], color='red', marker='o')
 
+plt.title(f"Acquisition nr: {trigger_options_index}")    
+plt.xlabel("Samples")
+plt.ylabel("Volts")
+plt.grid()
+plt.axhline(TRIGGER_VOLTAGE, color='grey', linestyle='--')
+plt.axhline(LEVEL_ZERO, color='black')
+#plt.xticks(np.arange(0, 100, step=2))
 plt.show()
