@@ -33,11 +33,15 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
     return wrap;
 }
 
-void decodeTriggerMessage(const char *input, uint8_t *triggerChannel, uint8_t *triggerValue, uint8_t *samplingMode)
+void decodeTriggerMessage(const char *input, uint8_t *triggerMode, uint8_t *triggerChannel, uint8_t *triggerValue,
+                          uint8_t *samplingMode, uint8_t *triggerEdge, uint8_t *acqPeriod)
 {
-    *triggerChannel = input[0];
-    *samplingMode = input[1];
-    *triggerValue = input[2];
+    *triggerMode = input[0];
+    *triggerChannel = input[1];
+    *samplingMode = input[2];
+    *triggerValue = input[3];
+    *triggerEdge = input[4];
+    *acqPeriod = input[5];
 }
 
 inline static uint8_t myAdc_read(void)
@@ -47,6 +51,18 @@ inline static uint8_t myAdc_read(void)
     return (uint8_t) ((adc_hw->result) >> 4);
 }
 
+enum ACQ_MODE {
+    AUTO,
+    NORMAL
+};
+
+enum EDGE {
+    FALLING,
+    RISING
+};
+
+uint8_t sample_address_pointer[CAPTURE_DEPTH];
+uint8_t triggerValue, triggerChannel, samplingMode, triggerMode, triggerEdge, acqPeriod, new_value, old_value;;
 bool newInput;
 
 void callback_func(void *param)
@@ -54,10 +70,97 @@ void callback_func(void *param)
     newInput = true;
 }
 
+inline static void normal_trigger()
+{
+    newInput = false;
+
+    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS); //start conversion
+    old_value = myAdc_read(); //read old value for checking trigger
+    (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
+    switch(triggerEdge)
+    {
+        case FALLING:
+            while(!newInput)
+            {
+                new_value = myAdc_read();
+                if ( ( new_value <= triggerValue) && ( old_value > triggerValue) )
+                {
+
+                    if((samplingMode == 3) && (triggerChannel == 1))
+                    {
+                        sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
+                        sample_address_pointer[1-triggerChannel] = myAdc_read();
+                        (void) myAdc_read();
+                    }else
+                    {
+                        sample_address_pointer[0] = new_value; //set bits in correct order, CH1 first, CH2 second
+                        sample_address_pointer[1] = myAdc_read();
+                    }
+
+                    for(int i=2;i<CAPTURE_DEPTH;i++)
+                    {
+                        sample_address_pointer[i] = myAdc_read(); //reading values from adc
+                    }
+
+                    stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH ); //sending bytes
+                    break;
+                }
+                (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
+                old_value = new_value;
+            }
+            break;
+        case RISING:
+            while(!newInput)
+            {
+                new_value = myAdc_read();
+                if ( ( new_value >= triggerValue) && ( old_value < triggerValue) )
+                {
+
+                    if((samplingMode == 3) && (triggerChannel == 1))
+                    {
+                        sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
+                        sample_address_pointer[1-triggerChannel] = myAdc_read();
+                        (void) myAdc_read();
+                    }else
+                    {
+                        sample_address_pointer[0] = new_value; //set bits in correct order, CH1 first, CH2 second
+                        sample_address_pointer[1] = myAdc_read();
+                    }
+
+                    for(int i=2;i<CAPTURE_DEPTH;i++)
+                    {
+                        sample_address_pointer[i] = myAdc_read(); //reading values from adc
+                    }
+
+                    stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH ); //sending bytes
+                    break;
+                }
+                (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
+                old_value = new_value;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+inline static void auto_trigger(void)
+{
+    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS); //start conversion
+    if((samplingMode == 3) && (triggerChannel == 1)) //to synchronise samples in round robin
+    {
+        (void) myAdc_read();
+    }
+    for(int i=0;i<CAPTURE_DEPTH;i++)
+    {
+        sample_address_pointer[i] = myAdc_read(); //reading values from adc
+    }
+    stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH ); //sending bytes
+}
+
 int main() {
     stdio_init_all();
 
-    uint8_t *sample_address_pointer = calloc(CAPTURE_DEPTH, sizeof(uint8_t));
     char *received_string = calloc(BUFFER_SIZE, sizeof(char));
 
     //PWM on gpio 16
@@ -85,58 +188,39 @@ int main() {
 
     adc_set_clkdiv(0); // Run at max speed
 
-    uint8_t triggerChannel, samplingMode, triggerValue, new_value, old_value;
-
     stdio_usb.set_chars_available_callback(callback_func, NULL);
 
     while(1)
     {
         fgets(received_string, BUFFER_SIZE, stdin); //waiting for input
 
-        decodeTriggerMessage(received_string, &triggerChannel, &triggerValue, &samplingMode); //Decode message with trigger and sampling setup
+        decodeTriggerMessage(received_string, &triggerMode, &triggerChannel,
+                             &triggerValue, &samplingMode, &triggerEdge, &acqPeriod); //Decode message with trigger and sampling setup
 
         adc_select_input(triggerChannel); //set input for trigger
         adc_set_round_robin(samplingMode); //set sampling mode
 
-        newInput = false;
-
-        hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS); //start conversion
-        old_value = myAdc_read(); //read old value for checking trigger
-
-        (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
-        while(!newInput)
+        switch(triggerMode)
         {
-            new_value = myAdc_read();
-            if ( ( new_value >= triggerValue) && ( old_value < triggerValue) )
-            {
-
-                if((samplingMode == 3) && (triggerChannel == 1))
+            case AUTO:
+                for(int i=0;i<acqPeriod*2;i++)
                 {
-                    sample_address_pointer[triggerChannel] = new_value; //set bits in correct order, CH1 first, CH2 second
-                    sample_address_pointer[1-triggerChannel] = myAdc_read();
-                    (void) myAdc_read();
-                }else
-                {
-                    sample_address_pointer[0] = new_value; //set bits in correct order, CH1 first, CH2 second
-                    sample_address_pointer[1] = myAdc_read();
+                    auto_trigger();
                 }
-
-                for(int i=2;i<CAPTURE_DEPTH;i++)
-                {
-                    sample_address_pointer[i] = myAdc_read(); //reading values from adc
-                }
-
-                stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH ); //sending bytes
                 break;
-            }
-            (void) myAdc_read(); //read value from second channel and do nothing with that, due to robin mode sampling
-            old_value = new_value;
+            case NORMAL:
+                for(int i=0;i<acqPeriod*2;i++)
+                {
+                    normal_trigger();
+                }
+                break;
+            default:
+                break;
         }
 
         stdio_flush(); //flush the buffer
     }
 
-    free(sample_address_pointer);
     free(received_string);
 
     return 0;

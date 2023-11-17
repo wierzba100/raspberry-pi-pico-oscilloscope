@@ -7,22 +7,23 @@ ADC_VREF = 3.3
 ADC_RANGE = (1 << 8)
 ADC_CONVERT = (ADC_VREF / (ADC_RANGE - 1))
 LEVEL_ZERO = 1.65
-TRIGGER_VOLTAGE = 1.65 #user
+TRIGGER_VOLTAGE = 2.00 #user
 
 data = np.load('samples.npy')
 data = data.astype(float)
 data = data * ADC_CONVERT
 
-trigger_options_index = 6
-plt.rc('font', size=11)
+acq_nr = 7
+plt.rc('font', size=14)
 plt.subplot(1, 1, 1)
-if(trigger_options_index < 6):
-    plt.plot(np.arange(len(data[trigger_options_index])), data[trigger_options_index], color='blue', marker='o')
+if(acq_nr < 5):
+    plt.plot(np.arange(len(data[acq_nr])), data[acq_nr], color='blue', marker='o')
 else:
-    plt.plot(np.arange(len(data[trigger_options_index][::2])), data[trigger_options_index][::2], color='blue', marker='o')
-    plt.plot(np.arange(len(data[trigger_options_index][1::2])), data[trigger_options_index][1::2], color='red', marker='o')
+    plt.plot(np.arange(len(data[acq_nr][::2])), data[acq_nr][::2], color='blue', marker='o', label='Channel 1')
+    plt.plot(np.arange(len(data[acq_nr][1::2])), data[acq_nr][1::2], color='red', marker='o', label='Channel 2')
+    plt.legend()
 
-plt.title(f"Acquisition nr: {trigger_options_index}")    
+plt.title(f"Acquisition nr: {acq_nr}, Normal, 2 Channels, Trigger on CH2, Rising, 2.00V")
 plt.xlabel("Samples")
 plt.ylabel("Volts")
 plt.grid()
