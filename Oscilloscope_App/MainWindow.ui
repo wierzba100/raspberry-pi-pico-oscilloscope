@@ -41,13 +41,13 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>260</y>
-      <width>181</width>
+      <y>310</y>
+      <width>201</width>
       <height>51</height>
      </rect>
     </property>
     <property name="text">
-     <string>Send</string>
+     <string>Start</string>
     </property>
    </widget>
    <widget class="QComboBox" name="modeCmbBox">
@@ -243,6 +243,32 @@
      </rect>
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout"/>
+   </widget>
+   <widget class="QSpinBox" name="spinBoxfrequency">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>260</y>
+      <width>61</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="maximum">
+     <number>1000</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>260</y>
+      <width>101</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Refresh Rate [Hz]</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

@@ -5,6 +5,7 @@
 #include <QSerialPortInfo>
 #include <QMessageBox>
 #include <QDebug>
+#include <QTimer>
 #include "SerialPort.h"
 #include "Chart.h"
 
@@ -25,6 +26,7 @@ public:
     ~MainWindow();
 
 private slots:
+    void SendData();
 
 public slots:
     void updateData();
@@ -33,6 +35,7 @@ private:
     Ui::MainWindow *ui;
     SerialPort _serial;
     Chart _chart;
+    QTimer *timer;
     void loadPorts();
     void on_btnOpenPort_clicked();
     void on_sendBtn_clicked();

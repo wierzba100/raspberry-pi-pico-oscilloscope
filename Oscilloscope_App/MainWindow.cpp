@@ -11,14 +11,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->sendBtn, &QPushButton::clicked, this, &MainWindow::on_sendBtn_clicked);
     connect(&_serial, SIGNAL(dataReceived()), this, SLOT(updateData()));
     loadPorts();
-    static auto _ChartView = new QChartView(_chart.m_chart);
+    auto _ChartView = new QChartView(_chart.m_chart);
     _ChartView->setParent(ui->horizontalFrame);
     _ChartView->resize(1000,600);
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(SendData()));
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete timer;
 }
 
 void MainWindow::loadPorts()
@@ -43,9 +46,21 @@ void MainWindow::on_btnOpenPort_clicked()
 }
 
 
-void MainWindow::on_sendBtn_clicked()
+void MainWindow::SendData()
 {
     _serial.writeData(prepare_bytes_to_send());
+}
+
+void MainWindow::on_sendBtn_clicked()
+{
+    timer->stop();
+    if(ui->spinBoxfrequency->value() != 0)
+    {
+        timer->start(1.0 / ui->spinBoxfrequency->value() * 1000.0);
+    }else
+    {
+        MainWindow::SendData();
+    }
 }
 
 QByteArray MainWindow::prepare_bytes_to_send()
