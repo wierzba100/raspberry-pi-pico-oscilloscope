@@ -93,29 +93,5 @@ void MainWindow::updateData()
             }
         }
     }
-
-
-    /*if(ui->channels_nrCmbBox->currentIndex() == 0)
-    {
-        if(ui->trigger_channelCmbBox->currentIndex() == 0)
-        {
-            for(int i=0;i<CAPTURE_DEPTH;i++)
-            {
-                _chart.m_series_1->append(i, _serial.data[i] * ADC_CONVERT);
-            }
-        }else
-        {
-            for(int i=0;i<CAPTURE_DEPTH;i++)
-            {
-                _chart.m_series_2->append(i, _serial.data[i] * ADC_CONVERT);
-            }
-        }
-    }else
-    {
-        for(int i=0;i<CAPTURE_DEPTH;i++)
-        {
-
-        }
-    }*/
 }
 
