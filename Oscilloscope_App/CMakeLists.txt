@@ -27,6 +27,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         SerialPort.h SerialPort.cpp
         Chart.h Chart.cpp
+        SetPortWindow.h SetPortWindow.cpp SetPortWindow.ui
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Oscilloscope_App APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

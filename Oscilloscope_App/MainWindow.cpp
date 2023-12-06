@@ -1,21 +1,22 @@
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
-#include "qforeach.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::MainWindow),
+    _serial(this)
 {
     ui->setupUi(this);
-    connect(ui->btnOpenPort, &QPushButton::clicked, this, &MainWindow::on_btnOpenPort_clicked);
-    connect(ui->sendBtn, &QPushButton::clicked, this, &MainWindow::on_sendBtn_clicked);
+    setPortWindow = new SetPortWindow(&_serial, this);
+    setPortWindow->show();
+    setPortWindow->exec();
     connect(&_serial, SIGNAL(dataReceived()), this, SLOT(updateData()));
-    loadPorts();
     auto _ChartView = new QChartView(_chart.m_chart);
     _ChartView->setParent(ui->horizontalFrame);
     _ChartView->resize(1000,600);
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(SendData()));
+    SetRefreshRate();
 }
 
 MainWindow::~MainWindow()
@@ -24,43 +25,15 @@ MainWindow::~MainWindow()
     delete timer;
 }
 
-void MainWindow::loadPorts()
-{
-    foreach (auto &port, QSerialPortInfo::availablePorts())
-    {
-        ui->cmbPorts->addItem(port.portName());
-    }
-}
-
-
-void MainWindow::on_btnOpenPort_clicked()
-{
-    auto isConnected = _serial.IsConnect(ui->cmbPorts->currentText());
-    if(!isConnected)
-    {
-        QMessageBox::critical(this, "Error", "Port connection error");
-    }else
-    {
-        QMessageBox::information(this, "Info", "Port connected");
-    }
-}
-
-
 void MainWindow::SendData()
 {
     _serial.writeData(prepare_bytes_to_send());
 }
 
-void MainWindow::on_sendBtn_clicked()
+void MainWindow::SetRefreshRate()
 {
     timer->stop();
-    if(ui->spinBoxfrequency->value() != 0)
-    {
-        timer->start(1.0 / ui->spinBoxfrequency->value() * 1000.0);
-    }else
-    {
-        MainWindow::SendData();
-    }
+    timer->start(1.0 / REFRESH_RATE_HZ * 1000.0);
 }
 
 QByteArray MainWindow::prepare_bytes_to_send()
@@ -97,7 +70,32 @@ void MainWindow::updateData()
         _chart.m_series_trigger->append(0, ui->trigger_levelDoubleSpinBox->value());
         _chart.m_series_trigger->append(CAPTURE_DEPTH-1, ui->trigger_levelDoubleSpinBox->value());
     }
-    if(ui->channels_nrCmbBox->currentIndex() == 0)
+
+    for(int i=0;i<CAPTURE_DEPTH;i++)
+    {
+        if(ui->channels_nrCmbBox->currentIndex() == 0)
+        {
+            if(ui->trigger_channelCmbBox->currentIndex() == 0)
+            {
+                _chart.m_series_1->append(i, _serial.data[i] * ADC_CONVERT);
+            }else
+            {
+                _chart.m_series_2->append(i, _serial.data[i] * ADC_CONVERT);
+            }
+        }else
+        {
+            if(i%2 == 0)
+            {
+                _chart.m_series_1->append(i/2, _serial.data[i] * ADC_CONVERT);
+            }else
+            {
+                _chart.m_series_2->append(i/2, _serial.data[i] * ADC_CONVERT);
+            }
+        }
+    }
+
+
+    /*if(ui->channels_nrCmbBox->currentIndex() == 0)
     {
         if(ui->trigger_channelCmbBox->currentIndex() == 0)
         {
@@ -116,14 +114,8 @@ void MainWindow::updateData()
     {
         for(int i=0;i<CAPTURE_DEPTH;i++)
         {
-            if(i%2 == 0)
-            {
-                _chart.m_series_1->append(i/2, _serial.data[i] * ADC_CONVERT);
-            }else
-            {
-                _chart.m_series_2->append(i/2, _serial.data[i] * ADC_CONVERT);
-            }
+
         }
-    }
+    }*/
 }
 

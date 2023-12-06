@@ -1,4 +1,5 @@
 #include "Chart.h"
+#include "SerialPort.h"
 
 Chart::Chart(QWidget *parent)
     : QChartView{parent}
@@ -14,7 +15,7 @@ Chart::Chart(QWidget *parent)
     m_series_2->setPen(QPen(Qt::red, 2));
 
     auto axisX = new QValueAxis;
-    axisX->setRange(0, 99);
+    axisX->setRange(0, CAPTURE_DEPTH-1);
     axisX->setLabelFormat("%g");
     axisX->setTitleText("Samples");
 
@@ -34,7 +35,7 @@ Chart::Chart(QWidget *parent)
     //Line Zero
     QLineSeries* horizontalLine = new QLineSeries();
     horizontalLine->append(0, 1.65);
-    horizontalLine->append(99, 1.65);
+    horizontalLine->append(CAPTURE_DEPTH-1, 1.65);
     horizontalLine->setPen(QPen(Qt::black));  // Kolor linii poziomej
 
     m_chart->addSeries(horizontalLine);

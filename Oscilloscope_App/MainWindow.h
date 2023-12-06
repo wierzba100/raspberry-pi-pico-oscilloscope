@@ -2,16 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QSerialPortInfo>
-#include <QMessageBox>
 #include <QDebug>
 #include <QTimer>
-#include "SerialPort.h"
 #include "Chart.h"
+#include "SetPortWindow.h"
+#include "SerialPort.h"
 
 #define ADC_VREF 3.3
 #define ADC_RANGE (1 << 8)
 #define ADC_CONVERT (ADC_VREF / (ADC_RANGE - 1))
+#define REFRESH_RATE_HZ 10
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,12 +33,11 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
-    SerialPort _serial;
     Chart _chart;
+    SerialPort _serial;
+    SetPortWindow *setPortWindow;
     QTimer *timer;
-    void loadPorts();
-    void on_btnOpenPort_clicked();
-    void on_sendBtn_clicked();
+    void SetRefreshRate();
     QByteArray prepare_bytes_to_send();
 };
 

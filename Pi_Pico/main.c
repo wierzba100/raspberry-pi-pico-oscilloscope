@@ -14,7 +14,7 @@
 #define PWM0_GPIO 16
 #define PWM1_GPIO 18
 
-#define CAPTURE_DEPTH 100
+#define CAPTURE_DEPTH 1000
 #define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
@@ -34,14 +34,13 @@ uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)
 }
 
 void decodeTriggerMessage(const char *input, uint8_t *triggerMode, uint8_t *triggerChannel, uint8_t *triggerValue,
-                          uint8_t *samplingMode, uint8_t *triggerEdge)//, uint8_t *acqPeriod)
+                          uint8_t *samplingMode, uint8_t *triggerEdge)
 {
     *triggerMode = input[0];
     *triggerChannel = input[1];
     *samplingMode = input[2];
     *triggerValue = input[3];
     *triggerEdge = input[4];
-    //*acqPeriod = input[5];
 }
 
 inline static uint8_t myAdc_read(void)
@@ -62,7 +61,7 @@ enum EDGE {
 };
 
 uint8_t sample_address_pointer[CAPTURE_DEPTH];
-uint8_t triggerValue, triggerChannel, samplingMode, triggerMode, triggerEdge, new_value, old_value;//, acqPeriod;
+uint8_t triggerValue, triggerChannel, samplingMode, triggerMode, triggerEdge, new_value, old_value;
 bool newInput;
 
 void callback_func(void *param)
@@ -204,17 +203,9 @@ int main() {
         {
             case AUTO:
                 auto_trigger();
-                /*for(int i=0;i<acqPeriod*2;i++)
-                {
-                    auto_trigger();
-                }*/
                 break;
             case NORMAL:
                 normal_trigger();
-                /*for(int i=0;i<acqPeriod*2;i++)
-                {
-                    normal_trigger();
-                }*/
                 break;
             default:
                 break;

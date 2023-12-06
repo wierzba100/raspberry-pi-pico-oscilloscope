@@ -54,7 +54,8 @@ void SerialPort::ReadData()
 
     if (bytesRead > 0)
     {
-        qDebug() << "Odczytano dane (" << bytesRead << " bajtów): " << QByteArray((char *)data, bytesRead);
+        qDebug() << "Odczytano dane (" << bytesRead << " bajtów)";
     }
+
     emit dataReceived();
 }

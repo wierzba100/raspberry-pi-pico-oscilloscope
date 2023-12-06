@@ -4,8 +4,9 @@
 #include <QObject>
 #include <QSerialPort>
 #include <QDebug>
+#include <QMessageBox>
 
-#define CAPTURE_DEPTH 100
+#define CAPTURE_DEPTH 1000
 
 class SerialPort : public QObject
 {
