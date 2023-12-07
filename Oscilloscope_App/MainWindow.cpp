@@ -11,8 +11,12 @@ MainWindow::MainWindow(QWidget *parent)
     setPortWindow->show();
     setPortWindow->exec();
     connect(&_serial, SIGNAL(dataReceived()), this, SLOT(updateData()));
+    ui->start_stopButton->setCheckable(true);
+    connect(ui->start_stopButton, &QPushButton::clicked, this, &MainWindow::on_pushButton_toggled);
     auto _ChartView = new QChartView(_chart.m_chart);
     _ChartView->setParent(ui->horizontalFrame);
+    _ChartView->setRenderHint(QPainter::Antialiasing);
+    _ChartView->setRubberBand(QChartView::HorizontalRubberBand);
     _ChartView->resize(1000,600);
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(SendData()));
@@ -92,6 +96,17 @@ void MainWindow::updateData()
                 _chart.m_series_2->append(i/2, _serial.data[i] * ADC_CONVERT);
             }
         }
+    }
+}
+
+void MainWindow::on_pushButton_toggled(bool checked)
+{
+    if(checked)
+    {
+        timer->stop();
+    }else
+    {
+        timer->start(1.0 / REFRESH_RATE_HZ * 1000.0);
     }
 }
 

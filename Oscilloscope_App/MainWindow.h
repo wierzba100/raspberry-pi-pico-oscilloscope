@@ -38,6 +38,7 @@ private:
     SetPortWindow *setPortWindow;
     QTimer *timer;
     void SetRefreshRate();
+    void on_pushButton_toggled(bool checked);
     QByteArray prepare_bytes_to_send();
 };
 

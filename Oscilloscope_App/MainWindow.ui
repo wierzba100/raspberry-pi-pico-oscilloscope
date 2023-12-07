@@ -195,6 +195,19 @@
     </property>
     <layout class="QHBoxLayout" name="horizontalLayout"/>
    </widget>
+   <widget class="QPushButton" name="start_stopButton">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>190</y>
+      <width>101</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Stop/Start</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
