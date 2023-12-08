@@ -16,6 +16,7 @@ class SetPortWindow : public QDialog
 public:
     explicit SetPortWindow(SerialPort* serial, QWidget *parent = nullptr);
     ~SetPortWindow();
+    bool isAppClosed;
 
 private slots:
 

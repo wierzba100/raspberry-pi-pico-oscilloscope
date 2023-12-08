@@ -184,17 +184,6 @@
      <string>Trigger Level</string>
     </property>
    </widget>
-   <widget class="QFrame" name="horizontalFrame">
-    <property name="geometry">
-     <rect>
-      <x>240</x>
-      <y>10</y>
-      <width>1031</width>
-      <height>601</height>
-     </rect>
-    </property>
-    <layout class="QHBoxLayout" name="horizontalLayout"/>
-   </widget>
    <widget class="QPushButton" name="start_stopButton">
     <property name="geometry">
      <rect>
@@ -206,6 +195,16 @@
     </property>
     <property name="text">
      <string>Stop/Start</string>
+    </property>
+   </widget>
+   <widget class="QCustomPlot" name="myPlot" native="true">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>30</y>
+      <width>1021</width>
+      <height>581</height>
+     </rect>
     </property>
    </widget>
   </widget>
@@ -221,6 +220,14 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

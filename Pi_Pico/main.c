@@ -14,7 +14,7 @@
 #define PWM0_GPIO 16
 #define PWM1_GPIO 18
 
-#define CAPTURE_DEPTH 1000
+#define CAPTURE_DEPTH 10000
 #define BUFFER_SIZE 128
 
 uint32_t pwm_set_freq_duty(uint slice_num, uint chan,uint32_t freq, int duty)

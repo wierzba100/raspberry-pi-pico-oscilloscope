@@ -9,6 +9,7 @@ SetPortWindow::SetPortWindow(SerialPort* serial, QWidget *parent) :
     _serial(serial)
 {
     ui->setupUi(this);
+    isAppClosed = 0;
     loadPorts();
     connect(ui->okButton, &QPushButton::clicked, this, &SetPortWindow::on_okButton_clicked);
     connect(ui->cancelButton, &QPushButton::clicked, this, &SetPortWindow::on_cancelButton_clicked);
@@ -43,6 +44,7 @@ void SetPortWindow::on_okButton_clicked()
 
 void SetPortWindow::on_cancelButton_clicked()
 {
-    QCoreApplication::quit();
+    isAppClosed = true;
+    close();
 }
 

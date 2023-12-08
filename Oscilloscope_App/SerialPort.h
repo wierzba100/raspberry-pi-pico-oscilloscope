@@ -6,7 +6,7 @@
 #include <QDebug>
 #include <QMessageBox>
 
-#define CAPTURE_DEPTH 1000
+#define CAPTURE_DEPTH 10000
 
 class SerialPort : public QObject
 {
@@ -27,6 +27,8 @@ public slots:
     void writeData(const QByteArray &data);
 
 private:
+    uint8_t readDataCounter;
+
 
 };
 

@@ -9,10 +9,12 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS SerialPort)
-find_package(Qt6 REQUIRED COMPONENTS Charts)
+find_package(Qt6 REQUIRED COMPONENTS PrintSupport)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -26,8 +28,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         SerialPort.h SerialPort.cpp
-        Chart.h Chart.cpp
         SetPortWindow.h SetPortWindow.cpp SetPortWindow.ui
+        qcustomplot.cpp qcustomplot.h
+
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET Oscilloscope_App APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -49,7 +52,7 @@ endif()
 
 target_link_libraries(Oscilloscope_App PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(Oscilloscope_App PRIVATE Qt6::SerialPort)
-target_link_libraries(Oscilloscope_App PRIVATE Qt6::Charts)
+target_link_libraries(Oscilloscope_App PRIVATE Qt6::PrintSupport)
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an

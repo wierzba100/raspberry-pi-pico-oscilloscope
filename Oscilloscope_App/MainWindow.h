@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <QDebug>
 #include <QTimer>
-#include "Chart.h"
+#include <QVector>
 #include "SetPortWindow.h"
 #include "SerialPort.h"
 
@@ -33,13 +33,15 @@ public slots:
 
 private:
     Ui::MainWindow *ui;
-    Chart _chart;
     SerialPort _serial;
     SetPortWindow *setPortWindow;
     QTimer *timer;
     void SetRefreshRate();
     void on_pushButton_toggled(bool checked);
+    void setupDiagram();
     QByteArray prepare_bytes_to_send();
+    QVector<double>x_1channel;
+    QVector<double>x_2channels;
 };
 
 #endif // MAINWINDOW_H
