@@ -55,7 +55,7 @@ void SerialPort::ReadData()
     readDataCounter++;
     if (bytesRead > 0)
     {
-        qDebug() << "Read (" << bytesRead << " bytes)";
+        //qDebug() << "Read (" << bytesRead << " bytes)";
     }
 
     if(readDataCounter == 3)
