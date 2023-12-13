@@ -5,13 +5,12 @@
 #include <QDebug>
 #include <QTimer>
 #include <QVector>
+#include <QKeyEvent>
+#include "qcustomplot.h"
 #include "SetPortWindow.h"
 #include "SerialPort.h"
 
-#define ADC_VREF 3.3
-#define ADC_RANGE (1 << 8)
-#define ADC_CONVERT (ADC_VREF / (ADC_RANGE - 1))
-#define REFRESH_RATE_HZ 5
+#define REFRESH_RATE_HZ 10
 #define ADC_ONE_CONVERSION_TIME 2.32
 
 QT_BEGIN_NAMESPACE
@@ -32,6 +31,9 @@ private slots:
 public slots:
     void updateData();
 
+protected:
+    void keyPressEvent(QKeyEvent *event);
+
 private:
     Ui::MainWindow *ui;
     SerialPort _serial;
@@ -41,12 +43,14 @@ private:
     void on_pushButton_toggled(bool checked);
     void setupDiagram();
     QByteArray prepare_bytes_to_send();
-    QVector<double>x_1channel[2];
-    QVector<double>x_2channels[2];
+    QVector<double>x_1channel;
+    QVector<double>x_2channels;
     void zoomOut();
     void on_zoomOutpushBtn_clicked();
     void shift_to_left();
     void on_shiftToLeftBtn_clicked();
+    QCPItemStraightLine *horizontalLine;
+    QCPItemStraightLine *triggerLine;
 };
 
 #endif // MAINWINDOW_H

@@ -6,7 +6,8 @@ SerialPort::SerialPort(QObject *parent)
 {
     for(int i=0;i<CAPTURE_DEPTH;i++)
     {
-        data[i] = 0;
+        captured_data[i] = 0;
+        data_to_plot.append(0);
     }
     readDataCounter = 0;
 }
@@ -51,15 +52,17 @@ void SerialPort::writeData(const QByteArray &data)
 
 void SerialPort::ReadData()
 {
-    qint64 bytesRead = serialPort->read((char *)data+(4096*readDataCounter), 4096);
-    readDataCounter++;
-    if (bytesRead > 0)
+    if(readDataCounter <= 1)
     {
-        //qDebug() << "Read (" << bytesRead << " bytes)";
-    }
-
-    if(readDataCounter == 3)
+        serialPort->read((char *)captured_data+(4096*readDataCounter), 4096);
+        readDataCounter++;
+    }else
     {
+        serialPort->read((char *)captured_data+(4096*readDataCounter), 1808);
+        for(int i = 0;i<CAPTURE_DEPTH;++i)
+        {
+            data_to_plot[i] = captured_data[i] * ADC_CONVERT;
+        }
         emit dataReceived();
         readDataCounter = 0;
     }

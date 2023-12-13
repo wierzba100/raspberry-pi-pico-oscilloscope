@@ -1,6 +1,5 @@
 #include "MainWindow.h"
 #include "./ui_MainWindow.h"
-#include "qcustomplot.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,13 +16,11 @@ MainWindow::MainWindow(QWidget *parent)
     }
     for(int i=0;i<CAPTURE_DEPTH;i++)
     {
-        x_1channel[0].append(i*ADC_ONE_CONVERSION_TIME);
-        x_1channel[1].append(i*ADC_ONE_CONVERSION_TIME/1000);
+        x_1channel.append(i*ADC_ONE_CONVERSION_TIME);
     }
     for(int i=0;i<CAPTURE_DEPTH/2;i++)
     {
-        x_2channels[0].append(i*ADC_ONE_CONVERSION_TIME*2);
-        x_2channels[1].append(i*ADC_ONE_CONVERSION_TIME*2/1000);
+        x_2channels.append(i*ADC_ONE_CONVERSION_TIME*2);
     }
     connect(&_serial, SIGNAL(dataReceived()), this, SLOT(updateData()));
     ui->start_stopButton->setCheckable(true);
@@ -33,6 +30,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupDiagram();
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(SendData()));
+    setFocusPolicy(Qt::StrongFocus);
     SetRefreshRate();
 }
 
@@ -55,14 +53,20 @@ void MainWindow::SetRefreshRate()
 
 void MainWindow::setupDiagram()
 {
+    ui->myPlot->setNoAntialiasingOnDrag(true);
     ui->myPlot->xAxis->setLabel("Time[us]");
     ui->myPlot->xAxis->setRange(0, CAPTURE_DEPTH*ADC_ONE_CONVERSION_TIME);
     ui->myPlot->yAxis->setLabel("Voltage (V)");
-    ui->myPlot->yAxis->setRange(0, 3.3);
-    QCPItemStraightLine *horizontalLine = new QCPItemStraightLine(ui->myPlot);
+    ui->myPlot->yAxis->setRange(0, 3.4);
+    horizontalLine = new QCPItemStraightLine(ui->myPlot);
     horizontalLine->point1->setCoords(0, 1.65);
     horizontalLine->point2->setCoords(CAPTURE_DEPTH, 1.65);
     horizontalLine->setPen(QPen(Qt::black));
+    triggerLine = new QCPItemStraightLine(ui->myPlot);
+    triggerLine->setPen(QPen(Qt::green, 2, Qt::DashLine));
+    ui->myPlot->setInteractions(QCP::iRangeZoom | QCP::iSelectPlottables);
+    ui->myPlot->axisRect()->setRangeZoomAxes(ui->myPlot->xAxis, NULL);
+    ui->myPlot->setSelectionRectMode(QCP::srmZoom);
 }
 
 QByteArray MainWindow::prepare_bytes_to_send()
@@ -83,60 +87,60 @@ QByteArray MainWindow::prepare_bytes_to_send()
     data.append(static_cast<quint8>(ui->trigger_levelDoubleSpinBox->value() / ADC_CONVERT));
 
     data.append(ui->trigger_edgeCmbBox->currentIndex());
-
     data.append('\n');
 
     return data;
 }
 
+QVector<double>vect_data_ch1(CAPTURE_DEPTH/2);
+QVector<double>vect_data_ch2(CAPTURE_DEPTH/2);
 void MainWindow::updateData()
 {
-    QCPItemStraightLine *triggerLine = new QCPItemStraightLine(ui->myPlot);
+    ui->myPlot->clearGraphs();
+
     triggerLine->point1->setCoords(0, ui->trigger_levelDoubleSpinBox->value());
     triggerLine->point2->setCoords(CAPTURE_DEPTH, ui->trigger_levelDoubleSpinBox->value());
-    triggerLine->setPen(QPen(Qt::gray));
-
-    ui->myPlot->clearGraphs();
 
     if(ui->channels_nrCmbBox->currentIndex() == 0)
     {
-        QVector<double>vect_data(CAPTURE_DEPTH);
-        for(int i=0;i<CAPTURE_DEPTH;i++)
-        {
-            vect_data[i] = _serial.data[i] * ADC_CONVERT;
-        }
-
+        ui->myPlot->addGraph();
         if(ui->trigger_channelCmbBox->currentIndex() == 0)
         {
-            ui->myPlot->addGraph();
             ui->myPlot->graph(0)->setPen(QPen(Qt::blue));
-            ui->myPlot->graph(0)->setData(x_1channel[ui->timeCmbBox->currentIndex()], vect_data, true);
+            ui->myPlot->graph(0)->addData(x_1channel, _serial.data_to_plot, true);
         }else
         {
-            ui->myPlot->addGraph();
             ui->myPlot->graph(0)->setPen(QPen(Qt::red));
-            ui->myPlot->graph(0)->setData(x_1channel[ui->timeCmbBox->currentIndex()], vect_data, true);
+            ui->myPlot->graph(0)->addData(x_1channel, _serial.data_to_plot, true);
         }
     }else
     {
-        QVector<double>vect_data_ch1;
-        QVector<double>vect_data_ch2;
-        for(int i=0;i<CAPTURE_DEPTH;i=i+2)
+        quint16 data_index = 0;
+        for(int i=0;i<CAPTURE_DEPTH/2;i++)
         {
-            vect_data_ch1.append(_serial.data[i] * ADC_CONVERT);
-            vect_data_ch2.append(_serial.data[i+1] * ADC_CONVERT);
+            vect_data_ch1[i] = _serial.data_to_plot[data_index];
+            vect_data_ch2[i] = _serial.data_to_plot[data_index+1];
+            data_index = data_index + 2;
         }
         ui->myPlot->addGraph();
         ui->myPlot->graph(0)->setPen(QPen(Qt::blue));
-        ui->myPlot->graph(0)->setData(x_2channels[ui->timeCmbBox->currentIndex()], vect_data_ch1, true);
+        ui->myPlot->graph(0)->addData(x_2channels, vect_data_ch1, true);
 
         ui->myPlot->addGraph();
         ui->myPlot->graph(1)->setPen(QPen(Qt::red));
-        ui->myPlot->graph(1)->setData(x_2channels[ui->timeCmbBox->currentIndex()], vect_data_ch2, true);
+        ui->myPlot->graph(1)->addData(x_2channels, vect_data_ch2, true);
     }
 
-    ui->myPlot->xAxis->setLabel("Time[" + ui->timeCmbBox->currentText() + "]");
+    ui->myPlot->xAxis->setLabel("[us]");
     ui->myPlot->replot();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent* event)
+{
+    if(event->key() == 32)
+    {
+        ui->start_stopButton->click();
+    }
 }
 
 void MainWindow::on_pushButton_toggled(bool checked)
@@ -144,20 +148,15 @@ void MainWindow::on_pushButton_toggled(bool checked)
     if(checked)
     {
         timer->stop();
-        ui->myPlot->setInteractions(QCP::iRangeZoom | QCP::iSelectPlottables);
-        ui->myPlot->axisRect()->setRangeZoomAxes(ui->myPlot->xAxis, NULL);
-        ui->myPlot->setSelectionRectMode(QCP::srmZoom);
     }else
     {
-        ui->myPlot->setSelectionRectMode(QCP::srmNone);
-        ui->myPlot->setInteractions(QCP::iSelectPlottables);
         timer->start(1.0 / REFRESH_RATE_HZ * 1000.0);
     }
 }
 
 void MainWindow::zoomOut()
 {
-    ui->myPlot->rescaleAxes();
+    ui->myPlot->xAxis->rescale();
     ui->myPlot->replot();
 }
 
