@@ -6,22 +6,34 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1488</width>
-    <height>792</height>
+    <width>1220</width>
+    <height>742</height>
    </rect>
   </property>
+  <property name="font">
+   <font>
+    <pointsize>12</pointsize>
+    <bold>false</bold>
+   </font>
+  </property>
   <property name="windowTitle">
-   <string>Oscilloscope App</string>
+   <string>Raspberry Pi Pico Oscilloscope</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QComboBox" name="modeCmbBox">
     <property name="geometry">
      <rect>
-      <x>140</x>
-      <y>20</y>
-      <width>71</width>
+      <x>60</x>
+      <y>70</y>
+      <width>81</width>
       <height>31</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <bold>false</bold>
+     </font>
     </property>
     <property name="editable">
      <bool>false</bool>
@@ -46,176 +58,45 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>30</y>
-      <width>61</width>
-      <height>21</height>
+      <x>10</x>
+      <y>80</y>
+      <width>51</width>
+      <height>16</height>
      </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="lineWidth">
+     <number>1</number>
     </property>
     <property name="text">
      <string>Mode</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>60</y>
-      <width>101</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Channels number</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="channels_nrCmbBox">
-    <property name="geometry">
-     <rect>
-      <x>140</x>
-      <y>60</y>
-      <width>69</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <item>
-     <property name="text">
-      <string>1</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>2</string>
-     </property>
-    </item>
-   </widget>
-   <widget class="QLabel" name="label_3">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>90</y>
-      <width>91</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Trigger channel</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="trigger_channelCmbBox">
-    <property name="geometry">
-     <rect>
-      <x>140</x>
-      <y>90</y>
-      <width>69</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <item>
-     <property name="text">
-      <string>1</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>2</string>
-     </property>
-    </item>
-   </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>120</y>
-      <width>91</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Trigger edge</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="trigger_edgeCmbBox">
-    <property name="geometry">
-     <rect>
-      <x>140</x>
-      <y>120</y>
-      <width>69</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="currentIndex">
-     <number>1</number>
-    </property>
-    <item>
-     <property name="text">
-      <string>Falling</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>Rising</string>
-     </property>
-    </item>
-   </widget>
-   <widget class="QDoubleSpinBox" name="trigger_levelDoubleSpinBox">
-    <property name="geometry">
-     <rect>
-      <x>140</x>
-      <y>150</y>
-      <width>62</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="autoFillBackground">
-     <bool>true</bool>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(0, 255, 0);</string>
-    </property>
-    <property name="maximum">
-     <double>3.300000000000000</double>
-    </property>
-    <property name="singleStep">
-     <double>0.010000000000000</double>
-    </property>
-    <property name="value">
-     <double>1.650000000000000</double>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_5">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>150</y>
-      <width>91</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Trigger Level</string>
     </property>
    </widget>
    <widget class="QPushButton" name="start_stopButton">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>190</y>
-      <width>201</width>
+      <y>20</y>
+      <width>131</width>
       <height>41</height>
      </rect>
     </property>
     <property name="text">
-     <string>Stop/Start</string>
+     <string>Stop</string>
     </property>
    </widget>
    <widget class="QCustomPlot" name="myPlot" native="true">
     <property name="geometry">
      <rect>
-      <x>240</x>
-      <y>30</y>
-      <width>1211</width>
-      <height>691</height>
+      <x>150</x>
+      <y>10</y>
+      <width>1051</width>
+      <height>661</height>
      </rect>
     </property>
    </widget>
@@ -223,21 +104,21 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>240</y>
-      <width>91</width>
+      <y>170</y>
+      <width>131</width>
       <height>41</height>
      </rect>
     </property>
     <property name="text">
-     <string>Zoom Out</string>
+     <string>Show all</string>
     </property>
    </widget>
    <widget class="QPushButton" name="shiftToLeftBtn">
     <property name="geometry">
      <rect>
-      <x>110</x>
-      <y>240</y>
-      <width>101</width>
+      <x>10</x>
+      <y>220</y>
+      <width>131</width>
       <height>41</height>
      </rect>
     </property>
@@ -245,14 +126,194 @@
      <string>Shift to Left</string>
     </property>
    </widget>
+   <widget class="QCheckBox" name="ch_2_checkBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>130</y>
+      <width>111</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::RightToLeft</enum>
+    </property>
+    <property name="text">
+     <string>Channel 2</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="ch_1_checkBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>111</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="layoutDirection">
+     <enum>Qt::RightToLeft</enum>
+    </property>
+    <property name="text">
+     <string>Channel 1</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>270</y>
+      <width>131</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="title">
+     <string>Trigger Options</string>
+    </property>
+    <widget class="QRadioButton" name="ch_2_radioButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>50</y>
+       <width>101</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::RightToLeft</enum>
+     </property>
+     <property name="text">
+      <string>Channel 2</string>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="trigger_levelDoubleSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>110</y>
+       <width>62</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="autoFillBackground">
+      <bool>true</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background-color: rgb(0, 255, 0);</string>
+     </property>
+     <property name="maximum">
+      <double>3.300000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.010000000000000</double>
+     </property>
+     <property name="value">
+      <double>1.650000000000000</double>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="ch_1_radioButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>30</y>
+       <width>101</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::RightToLeft</enum>
+     </property>
+     <property name="text">
+      <string>Channel 1</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_4">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>80</y>
+       <width>41</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Edge</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_5">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>110</y>
+       <width>51</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Level</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="trigger_edgeCmbBox">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>80</y>
+       <width>61</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <bold>false</bold>
+      </font>
+     </property>
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
+     <item>
+      <property name="text">
+       <string>Falling</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Rising</string>
+      </property>
+     </item>
+    </widget>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1488</width>
-     <height>22</height>
+     <width>1220</width>
+     <height>27</height>
     </rect>
    </property>
   </widget>

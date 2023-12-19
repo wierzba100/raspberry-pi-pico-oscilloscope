@@ -22,7 +22,16 @@ MainWindow::MainWindow(QWidget *parent)
     {
         x_2channels.append(i*ADC_ONE_CONVERSION_TIME*2);
     }
+    QColor Color = QColor(0, 0, 255);
+    Color = Color.lighter(125);
+    ui->ch_1_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
+    ui->ch_1_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
+    Color = QColor(255, 0, 0);
+    Color = Color.lighter(125);
+    ui->ch_2_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
+    ui->ch_2_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
     connect(&_serial, SIGNAL(dataReceived()), this, SLOT(updateData()));
+    connect(ui->modeCmbBox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateWindow()));
     ui->start_stopButton->setCheckable(true);
     connect(ui->start_stopButton, &QPushButton::clicked, this, &MainWindow::on_pushButton_toggled);
     connect(ui->zoomOutpushBtn, &QPushButton::clicked, this, &MainWindow::on_zoomOutpushBtn_clicked);
@@ -42,7 +51,14 @@ MainWindow::~MainWindow()
 
 void MainWindow::SendData()
 {
-    _serial.writeData(prepare_bytes_to_send());
+    if(ui->ch_1_checkBox->isChecked() || ui->ch_2_checkBox->isChecked())
+    {
+        _serial.writeData(prepare_bytes_to_send());
+    }else
+    {
+        ui->myPlot->clearGraphs();
+        ui->myPlot->replot();
+    }
 }
 
 void MainWindow::SetRefreshRate()
@@ -65,23 +81,47 @@ void MainWindow::setupDiagram()
     triggerLine = new QCPItemStraightLine(ui->myPlot);
     triggerLine->setPen(QPen(Qt::green, 2, Qt::DashLine));
     ui->myPlot->setInteractions(QCP::iRangeZoom | QCP::iSelectPlottables);
-    ui->myPlot->axisRect()->setRangeZoomAxes(ui->myPlot->xAxis, NULL);
+    ui->myPlot->axisRect()->setRangeZoom(Qt::Horizontal);
     ui->myPlot->setSelectionRectMode(QCP::srmZoom);
+    ui->ch_1_radioButton->setDisabled(1);
+    ui->ch_2_radioButton->setDisabled(1);
+    ui->trigger_edgeCmbBox->setDisabled(1);
 }
+
 
 QByteArray MainWindow::prepare_bytes_to_send()
 {
     QByteArray data;
     data.append(ui->modeCmbBox->currentIndex());
 
-    if(ui->channels_nrCmbBox->currentIndex() == 1)
+    if(ui->ch_1_checkBox->isChecked() && ui->ch_2_checkBox->isChecked())
     {
-        data.append(ui->trigger_channelCmbBox->currentIndex());
+        if(ui->ch_2_radioButton->isChecked())
+        {
+            data.append(1);
+        }else
+        {
+            data.append((char) 0);
+        }
         data.append(3);
+        if(ui->modeCmbBox->currentIndex() == 1)
+        {
+            ui->ch_1_radioButton->setDisabled(0);
+            ui->ch_2_radioButton->setDisabled(0);
+        }
     }else
     {
-        data.append(ui->trigger_channelCmbBox->currentIndex());
-        data.append(ui->trigger_channelCmbBox->currentIndex()+1);
+        ui->ch_1_radioButton->setDisabled(1);
+        ui->ch_2_radioButton->setDisabled(1);
+        if(ui->ch_1_checkBox->isChecked())
+        {
+            data.append((char) 0);
+            data.append(1);
+        }else
+        {
+            data.append(1);
+            data.append(2);
+        }
     }
 
     data.append(static_cast<quint8>(ui->trigger_levelDoubleSpinBox->value() / ADC_CONVERT));
@@ -101,19 +141,7 @@ void MainWindow::updateData()
     triggerLine->point1->setCoords(0, ui->trigger_levelDoubleSpinBox->value());
     triggerLine->point2->setCoords(CAPTURE_DEPTH, ui->trigger_levelDoubleSpinBox->value());
 
-    if(ui->channels_nrCmbBox->currentIndex() == 0)
-    {
-        ui->myPlot->addGraph();
-        if(ui->trigger_channelCmbBox->currentIndex() == 0)
-        {
-            ui->myPlot->graph(0)->setPen(QPen(Qt::blue));
-            ui->myPlot->graph(0)->addData(x_1channel, _serial.data_to_plot, true);
-        }else
-        {
-            ui->myPlot->graph(0)->setPen(QPen(Qt::red));
-            ui->myPlot->graph(0)->addData(x_1channel, _serial.data_to_plot, true);
-        }
-    }else
+    if(ui->ch_1_checkBox->isChecked() && ui->ch_2_checkBox->isChecked())
     {
         quint16 data_index = 0;
         for(int i=0;i<CAPTURE_DEPTH/2;i++)
@@ -129,6 +157,18 @@ void MainWindow::updateData()
         ui->myPlot->addGraph();
         ui->myPlot->graph(1)->setPen(QPen(Qt::red));
         ui->myPlot->graph(1)->addData(x_2channels, vect_data_ch2, true);
+    }else
+    {
+        ui->myPlot->addGraph();
+        if(ui->ch_1_checkBox->isChecked())
+        {
+            ui->myPlot->graph(0)->setPen(QPen(Qt::blue));
+            ui->myPlot->graph(0)->addData(x_1channel, _serial.data_to_plot, true);
+        }else
+        {
+            ui->myPlot->graph(0)->setPen(QPen(Qt::red));
+            ui->myPlot->graph(0)->addData(x_1channel, _serial.data_to_plot, true);
+        }
     }
 
     ui->myPlot->xAxis->setLabel("[us]");
@@ -157,6 +197,7 @@ void MainWindow::on_pushButton_toggled(bool checked)
 void MainWindow::zoomOut()
 {
     ui->myPlot->xAxis->rescale();
+    ui->myPlot->yAxis->rescale();
     ui->myPlot->replot();
 }
 
@@ -169,7 +210,6 @@ void MainWindow::shift_to_left()
 {
     QCPAxisRect *axisRect = ui->myPlot->axisRect();
 
-    axisRect->setRangeZoom(Qt::Horizontal);
     axisRect->axis(QCPAxis::atBottom)->setRange(0, axisRect->axis(QCPAxis::atBottom)->range().size(), Qt::AlignLeft);
 
     ui->myPlot->replot();
@@ -178,5 +218,20 @@ void MainWindow::shift_to_left()
 void MainWindow::on_shiftToLeftBtn_clicked()
 {
     shift_to_left();
+}
+
+void MainWindow::updateWindow()
+{
+    if(ui->modeCmbBox->currentIndex() == 0)
+    {
+        ui->ch_1_radioButton->setDisabled(1);
+        ui->ch_2_radioButton->setDisabled(1);
+        ui->trigger_edgeCmbBox->setDisabled(1);
+    }else
+    {
+        ui->ch_1_radioButton->setDisabled(0);
+        ui->ch_2_radioButton->setDisabled(0);
+        ui->trigger_edgeCmbBox->setDisabled(0);
+    }
 }
 

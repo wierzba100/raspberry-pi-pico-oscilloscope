@@ -4,6 +4,7 @@ SerialPort::SerialPort(QObject *parent)
     : QObject{parent}
     ,serialPort(nullptr)
 {
+    serialPort = new QSerialPort(this);
     for(int i=0;i<CAPTURE_DEPTH;i++)
     {
         captured_data[i] = 0;
@@ -24,7 +25,6 @@ SerialPort::~SerialPort()
 
 bool SerialPort::IsConnect(QString portName)
 {
-    serialPort = new QSerialPort(this);
     serialPort->setPortName(portName);
     serialPort->setBaudRate(QSerialPort::Baud115200);
     serialPort->setDataBits(QSerialPort::Data8);

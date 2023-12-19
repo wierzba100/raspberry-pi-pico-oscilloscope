@@ -10,7 +10,7 @@
 #include "SetPortWindow.h"
 #include "SerialPort.h"
 
-#define REFRESH_RATE_HZ 10
+#define REFRESH_RATE_HZ 15
 #define ADC_ONE_CONVERSION_TIME 2.32
 
 QT_BEGIN_NAMESPACE
@@ -30,6 +30,7 @@ private slots:
 
 public slots:
     void updateData();
+    void updateWindow();
 
 protected:
     void keyPressEvent(QKeyEvent *event);
