@@ -187,17 +187,19 @@ void MainWindow::on_pushButton_toggled(bool checked)
 {
     if(checked)
     {
+        ui->start_stopButton->setText("Start");
         timer->stop();
     }else
     {
+        ui->start_stopButton->setText("Stop");
         timer->start(1.0 / REFRESH_RATE_HZ * 1000.0);
     }
 }
 
 void MainWindow::zoomOut()
 {
-    ui->myPlot->xAxis->rescale();
-    ui->myPlot->yAxis->rescale();
+    ui->myPlot->xAxis->setRange(0, CAPTURE_DEPTH*ADC_ONE_CONVERSION_TIME);
+    ui->myPlot->yAxis->setRange(0, 3.4);
     ui->myPlot->replot();
 }
 
