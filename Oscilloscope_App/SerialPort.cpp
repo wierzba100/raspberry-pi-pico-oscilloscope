@@ -32,6 +32,7 @@ bool SerialPort::IsConnect(QString portName)
     serialPort->setStopBits(QSerialPort::OneStop);
     if(serialPort->open(QIODevice::ReadWrite))
     {
+        serialPort->setDataTerminalReady(true);
         connect(serialPort, &QSerialPort::readyRead, this, &SerialPort::ReadData);
     }
 
