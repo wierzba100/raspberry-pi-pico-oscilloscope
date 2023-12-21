@@ -22,14 +22,6 @@ MainWindow::MainWindow(QWidget *parent)
     {
         x_2channels.append(i*ADC_ONE_CONVERSION_TIME*2);
     }
-    QColor Color = QColor(0, 0, 255);
-    Color = Color.lighter(125);
-    ui->ch_1_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
-    ui->ch_1_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
-    Color = QColor(255, 0, 0);
-    Color = Color.lighter(125);
-    ui->ch_2_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
-    ui->ch_2_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
     connect(&_serial, SIGNAL(dataReceived()), this, SLOT(updateData()));
     connect(ui->modeCmbBox, SIGNAL(currentIndexChanged(int)), this, SLOT(updateWindow()));
     ui->start_stopButton->setCheckable(true);
@@ -69,23 +61,26 @@ void MainWindow::SetRefreshRate()
 
 void MainWindow::setupDiagram()
 {
+    QColor Color = QColor(0, 0, 255);
+    Color = Color.lighter(150);
+    ui->ch_1_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
+    ui->ch_1_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
+    Color = QColor(255, 0, 0);
+    Color = Color.lighter(150);
+    ui->ch_2_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
+    ui->ch_2_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
     ui->myPlot->setNoAntialiasingOnDrag(true);
     ui->myPlot->xAxis->setLabel("Time[us]");
     ui->myPlot->xAxis->setRange(0, CAPTURE_DEPTH*ADC_ONE_CONVERSION_TIME);
     ui->myPlot->yAxis->setLabel("Voltage (V)");
     ui->myPlot->yAxis->setRange(0, 3.4);
-    horizontalLine = new QCPItemStraightLine(ui->myPlot);
-    horizontalLine->point1->setCoords(0, 1.65);
-    horizontalLine->point2->setCoords(CAPTURE_DEPTH, 1.65);
-    horizontalLine->setPen(QPen(Qt::black));
+    Color = QColor(0, 255, 0);
+    Color = Color.lighter(150);
     triggerLine = new QCPItemStraightLine(ui->myPlot);
-    triggerLine->setPen(QPen(Qt::green, 2, Qt::DashLine));
+    triggerLine->setPen(QPen(Color, 2, Qt::DashLine));
     ui->myPlot->setInteractions(QCP::iRangeZoom | QCP::iSelectPlottables);
     ui->myPlot->axisRect()->setRangeZoom(Qt::Horizontal);
     ui->myPlot->setSelectionRectMode(QCP::srmZoom);
-    ui->ch_1_radioButton->setDisabled(1);
-    ui->ch_2_radioButton->setDisabled(1);
-    ui->trigger_edgeCmbBox->setDisabled(1);
 }
 
 
@@ -187,11 +182,11 @@ void MainWindow::on_pushButton_toggled(bool checked)
 {
     if(checked)
     {
-        ui->start_stopButton->setText("Start");
+        ui->start_stopButton->setText("Start (Spacebar)");
         timer->stop();
     }else
     {
-        ui->start_stopButton->setText("Stop");
+        ui->start_stopButton->setText("Stop (Spacebar)");
         timer->start(1.0 / REFRESH_RATE_HZ * 1000.0);
     }
 }
@@ -229,11 +224,13 @@ void MainWindow::updateWindow()
         ui->ch_1_radioButton->setDisabled(1);
         ui->ch_2_radioButton->setDisabled(1);
         ui->trigger_edgeCmbBox->setDisabled(1);
+        ui->trigger_levelDoubleSpinBox->setDisabled(1);
     }else
     {
         ui->ch_1_radioButton->setDisabled(0);
         ui->ch_2_radioButton->setDisabled(0);
         ui->trigger_edgeCmbBox->setDisabled(0);
+        ui->trigger_levelDoubleSpinBox->setDisabled(0);
     }
 }
 

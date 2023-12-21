@@ -34,10 +34,8 @@ void SetPortWindow::on_okButton_clicked()
     if(!isConnected)
     {
         QMessageBox::critical(this, "Error", "Port connection error");
-    }else
-    {
-        QMessageBox::information(this, "Info", "Port connected");
     }
+
     close();
 }
 
