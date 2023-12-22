@@ -33,6 +33,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(timer, SIGNAL(timeout()), this, SLOT(SendData()));
     setFocusPolicy(Qt::StrongFocus);
     SetRefreshRate();
+    ui->ch_1_radioButton->setDisabled(1);
+    ui->ch_2_radioButton->setDisabled(1);
+    ui->trigger_edgeCmbBox->setDisabled(1);
+    ui->trigger_levelDoubleSpinBox->setDisabled(1);
 }
 
 MainWindow::~MainWindow()
@@ -70,9 +74,9 @@ void MainWindow::setupDiagram()
     ui->ch_2_checkBox->setStyleSheet(QString("QCheckBox { background-color: %1; }").arg(Color.name()));
     ui->ch_2_radioButton->setStyleSheet(QString("QRadioButton { background-color: %1; }").arg(Color.name()));
     ui->myPlot->setNoAntialiasingOnDrag(true);
-    ui->myPlot->xAxis->setLabel("Time[us]");
+    ui->myPlot->xAxis->setLabel("us");
     ui->myPlot->xAxis->setRange(0, CAPTURE_DEPTH*ADC_ONE_CONVERSION_TIME);
-    ui->myPlot->yAxis->setLabel("Voltage (V)");
+    ui->myPlot->yAxis->setLabel("V");
     ui->myPlot->yAxis->setRange(0, 3.4);
     Color = QColor(0, 255, 0);
     Color = Color.lighter(150);
@@ -88,6 +92,14 @@ QByteArray MainWindow::prepare_bytes_to_send()
 {
     QByteArray data;
     data.append(ui->modeCmbBox->currentIndex());
+
+    if(ui->modeCmbBox->currentIndex() == 1)
+    {
+        triggerLine->setVisible(1);
+    }else
+    {
+        triggerLine->setVisible(0);
+    }
 
     if(ui->ch_1_checkBox->isChecked() && ui->ch_2_checkBox->isChecked())
     {
@@ -166,7 +178,6 @@ void MainWindow::updateData()
         }
     }
 
-    ui->myPlot->xAxis->setLabel("[us]");
     ui->myPlot->replot();
 }
 
