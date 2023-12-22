@@ -13,9 +13,10 @@ data = np.load('samples.npy')
 data = data.astype(float)
 data = data * ADC_CONVERT
 
-acq_nr = 7
+acq_nr = 0
 plt.rc('font', size=14)
 plt.subplot(1, 1, 1)
+
 if(acq_nr < 5):
     plt.plot(np.arange(len(data[acq_nr])), data[acq_nr], color='blue', marker='o')
 else:
@@ -23,7 +24,7 @@ else:
     plt.plot(np.arange(len(data[acq_nr][1::2])), data[acq_nr][1::2], color='red', marker='o', label='Channel 2')
     plt.legend()
 
-plt.title(f"Acquisition nr: {acq_nr}, Normal, 2 Channels, Trigger on CH2, Rising, 2.00V")
+plt.title(f"Acquisition nr: {acq_nr}")
 plt.xlabel("Samples")
 plt.ylabel("Volts")
 plt.grid()
