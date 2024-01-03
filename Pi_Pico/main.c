@@ -1,4 +1,4 @@
-#include <stdio.h>
+  #include <stdio.h>
 #include <stdlib.h>
 
 #include "pico/stdlib.h"
@@ -145,16 +145,17 @@ inline static void normal_trigger()
 
 inline static void auto_trigger(void)
 {
-    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS); //start conversion
-    if((samplingMode == 3) && (triggerChannel == 1)) //to synchronise samples in round robin
-    {
-        (void) myAdc_read();
-    }
+    //start conversion
+    hw_set_bits(&adc_hw->cs, ADC_CS_START_ONCE_BITS);
+
     for(int i=0;i<CAPTURE_DEPTH;i++)
     {
-        sample_address_pointer[i] = myAdc_read(); //reading values from adc
+        //reading values from adc
+        sample_address_pointer[i] = myAdc_read();
     }
-    stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH ); //sending bytes
+
+    //sending bytes
+    stdio_usb.out_chars((const char *)&sample_address_pointer[0], CAPTURE_DEPTH);
 }
 
 int main() {
@@ -194,9 +195,9 @@ int main() {
         fgets(received_string, BUFFER_SIZE, stdin); //waiting for input
 
         decodeTriggerMessage(received_string, &triggerMode, &triggerChannel,
-                             &triggerValue, &samplingMode, &triggerEdge);//, &acqPeriod); //Decode message with trigger and sampling setup
+                             &triggerValue, &samplingMode, &triggerEdge); //Decode message with trigger and sampling setup
 
-        adc_select_input(triggerChannel); //set input for trigger
+        adc_select_input(triggerChannel); //set starting channel
         adc_set_round_robin(samplingMode); //set sampling mode
 
         switch(triggerMode)
